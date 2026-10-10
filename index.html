@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tilde</title>
+<meta name="description" content="Tilde — registro de evaluaciones por examen">
+<meta name="theme-color" content="#26262a">
+<!-- Tilde v1.0.0 -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+/* ===================== Tokens ===================== */
+:root{
+  --bg:#f4eee4; --surface:#fffaf2; --surface-2:#efe6d8; --border:#e1d6c4;
+  --text:#2a2a2e; --muted:#6e675e; --accent:#7f62cc; --accent-strong:#6447b5; --accent-soft:#ebe4fa; --on-accent:#ffffff;
+  --header:#26262a; --on-header:#f4eee4;
+  --ok:#16a34a; --ok-soft:#dcf3e3; --bad:#dc2626; --bad-soft:#fbe0e0; --nr:#86868e; --nr-soft:#e8e6e3;
+  --shadow:0 1px 2px rgba(40,30,20,.06),0 4px 14px rgba(40,30,20,.06);
+  --radius:14px; --nav-h:64px;
+  --font:'DM Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif; --display:'Bebas Neue',var(--font);
+}
+:root[data-theme="dark"]{
+  --bg:#1b1b1e; --surface:#252529; --surface-2:#2f2f34; --border:#3b3b42;
+  --text:#f2ede5; --muted:#a8a29a; --accent:#b49ef0; --accent-strong:#c9b8ff; --accent-soft:#342d4a; --on-accent:#1b1b1e;
+  --header:#141416; --on-header:#f2ede5;
+  --ok:#22c55e; --ok-soft:#173a25; --bad:#f05252; --bad-soft:#4a1d1d; --nr:#9a9aa2; --nr-soft:#38383e;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+
+/* ===================== Header ===================== */
+.hdr{position:sticky;top:0;z-index:30;background:var(--header);color:var(--on-header);display:flex;align-items:center;gap:10px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top))}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:1.7rem;letter-spacing:.06em;line-height:1}
+.brand svg{width:26px;height:26px}
+.brand .ver{font-family:var(--font);font-size:.7rem;letter-spacing:0;opacity:.6;margin-left:2px}
+.hdr .sp{flex:1}
+.sync{display:flex;align-items:center;gap:6px;font-size:.8rem;opacity:.9}
+.sync .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.sync.saving .dot{background:#f5b301;animation:pulse 1s infinite}
+.sync.pending .dot{background:var(--bad)}
+@keyframes pulse{50%{opacity:.3}}
+.icon-btn{background:transparent;border:0;color:inherit;width:38px;height:38px;border-radius:10px;display:grid;place-items:center}
+.icon-btn:hover{background:rgba(255,255,255,.1)}
+.icon-btn svg{width:20px;height:20px}
+.btn-install{background:var(--accent);color:var(--on-accent);border:0;border-radius:10px;padding:7px 12px;font-weight:600;font-size:.85rem}
+.demo-bar{background:var(--accent-soft);color:var(--accent-strong);text-align:center;font-size:.82rem;padding:6px 12px;font-weight:600}
+
+/* ===================== Layout ===================== */
+.layout{display:flex;min-height:calc(100vh - 58px)}
+.nav{display:flex}
+.nav button{background:transparent;border:0;display:flex;align-items:center;gap:10px;color:var(--muted);font-weight:600}
+.nav button svg{width:22px;height:22px}
+.nav button.on{color:var(--accent-strong)}
+main{flex:1;min-width:0;padding:16px;padding-bottom:calc(var(--nav-h) + 24px + env(safe-area-inset-bottom))}
+.wrap{max-width:760px;margin:0 auto}
+.wrap.wide{max-width:1180px}
+@media (max-width:899px){
+  .nav{position:fixed;bottom:0;left:0;right:0;z-index:25;background:var(--surface);border-top:1px solid var(--border);height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom)}
+  .nav button{flex:1;flex-direction:column;justify-content:center;gap:3px;font-size:.7rem}
+}
+@media (min-width:900px){
+  .nav{flex-direction:column;width:210px;padding:18px 10px;gap:4px;border-right:1px solid var(--border);background:var(--surface);position:sticky;top:58px;height:calc(100vh - 58px)}
+  .nav button{padding:11px 14px;border-radius:10px;font-size:.95rem}
+  .nav button:hover{background:var(--surface-2)}
+  .nav button.on{background:var(--accent-soft)}
+  main{padding:24px 28px 40px}
+}
+
+/* ===================== Componentes ===================== */
+h1.title{font-family:var(--display);font-weight:400;font-size:2rem;letter-spacing:.04em;margin:4px 0 2px}
+.subtitle{color:var(--muted);margin:0 0 16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.pad{padding:16px}
+.row{display:flex;align-items:center;gap:10px}
+.row.wrapr{flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:11px 16px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn svg{width:18px;height:18px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{background:var(--accent-strong)}
+.btn.block{width:100%}
+.btn.big{padding:15px 18px;font-size:1.05rem}
+.btn.sm{padding:7px 11px;font-size:.85rem;border-radius:10px}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.busy{pointer-events:none;opacity:.7}
+.btn.busy::after{content:'';width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:.85rem;font-weight:600;color:var(--muted)}
+.input{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;outline:none}
+.input:focus{border-color:var(--accent)}
+.search{position:relative}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted)}
+.search .input{padding-left:40px}
+.seg{display:flex;background:var(--surface-2);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:9px 10px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.chip.acc{background:var(--accent-soft);color:var(--accent-strong)}
+.chip.c{background:var(--ok-soft);color:var(--ok)} .chip.i{background:var(--bad-soft);color:var(--bad)} .chip.n{background:var(--nr-soft);color:var(--nr)}
+.chip.off{background:transparent;border:1px dashed var(--border)}
+button.chip{border:0}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-align:left;width:100%}
+button.item:hover{border-color:var(--accent)}
+.item .t{font-weight:600}
+.item .s{font-size:.82rem;color:var(--muted)}
+.item .chev{color:var(--muted);width:18px;height:18px;flex:none}
+.empty{padding:30px 16px;text-align:center;color:var(--muted)}
+.bar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.bar>span{display:block;height:100%;background:var(--accent)}
+.stack{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--surface-2)}
+.stack .c{background:var(--ok)} .stack .i{background:var(--bad)} .stack .n{background:var(--nr)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.kpi{padding:14px 16px}
+.kpi .v{font-family:var(--display);font-size:2rem;letter-spacing:.03em;line-height:1}
+.kpi .l{font-size:.8rem;color:var(--muted);margin-top:4px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+
+/* ===================== Wizard ===================== */
+.steps{display:flex;gap:6px;margin:0 0 14px}
+.steps div{flex:1;height:4px;border-radius:99px;background:var(--border)}
+.steps div.on{background:var(--accent)}
+.wz-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.wz-head .back{flex:none;border:1px solid var(--border);background:var(--surface);border-radius:12px;width:42px;height:42px;display:grid;place-items:center}
+.wz-head .back svg{width:20px;height:20px}
+.wz-head .t{font-weight:700;font-size:1.05rem;line-height:1.2}
+.wz-head .s{font-size:.82rem;color:var(--muted)}
+.stepname{font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-strong);margin-bottom:2px}
+.act-row{background:var(--surface);border:1px solid var(--border);border-left:5px solid var(--border);border-radius:var(--radius);padding:12px 12px 12px 14px}
+.act-row.C{border-left-color:var(--ok)} .act-row.I{border-left-color:var(--bad)} .act-row.N{border-left-color:var(--nr)}
+.act-row.flash{animation:flash .9s}
+@keyframes flash{30%{box-shadow:0 0 0 3px var(--accent)}}
+.act-head{display:flex;gap:10px;align-items:baseline;margin-bottom:10px}
+.act-num{font-family:var(--display);font-size:1.3rem;color:var(--muted);min-width:22px}
+.act-code{font-weight:700;font-size:.85rem;color:var(--accent-strong)}
+.act-desc{font-size:.95rem}
+.grades{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.g{min-height:58px;border-radius:12px;border:2px solid var(--border);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;font-size:.8rem;color:var(--muted);transition:transform .08s}
+.g:active{transform:scale(.97)}
+.g svg{width:22px;height:22px}
+.g.C{color:var(--ok)} .g.I{color:var(--bad)} .g.N{color:var(--nr)}
+.g.C.sel{background:var(--ok);border-color:var(--ok);color:#fff}
+.g.I.sel{background:var(--bad);border-color:var(--bad);color:#fff}
+.g.N.sel{background:var(--nr);border-color:var(--nr);color:#fff}
+.sticky-bot{position:sticky;bottom:calc(var(--nav-h) + 10px + env(safe-area-inset-bottom));margin-top:14px;z-index:5}
+@media (min-width:900px){.sticky-bot{bottom:16px}}
+.sticky-bot .card{padding:10px;display:flex;gap:10px;align-items:center}
+.sum3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.sum3 .card{padding:14px 10px;text-align:center}
+.sum3 .v{font-family:var(--display);font-size:2.4rem;line-height:1}
+.sum3 .l{font-size:.78rem;font-weight:700}
+.sum3 .p{font-size:.78rem;color:var(--muted)}
+.dotg{width:12px;height:12px;border-radius:50%;flex:none}
+.dotg.C{background:var(--ok)} .dotg.I{background:var(--bad)} .dotg.N{background:var(--nr)}
+.mini{display:flex;gap:4px}
+
+/* ===================== Tablas / reportes ===================== */
+.tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+table.tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:.88rem}
+.tbl th,.tbl td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.tbl th{background:var(--surface-2);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);position:sticky;top:0;z-index:1}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .stick{position:sticky;left:0;background:var(--surface);z-index:2}
+.tbl th.stick{z-index:3;background:var(--surface-2)}
+.tbl td.ctr,.tbl th.ctr{text-align:center}
+.tbl tfoot td{background:var(--surface-2);font-weight:700}
+.tbl tfoot td.stick{background:var(--surface-2)}
+.cell{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;font-weight:700;font-size:.8rem;color:#fff}
+.cell.C{background:var(--ok)} .cell.I{background:var(--bad)} .cell.N{background:var(--nr)} .cell.x{background:var(--surface-2);color:var(--muted)}
+.pct-lo{color:var(--bad)} .pct-mid{color:#c27c00} .pct-hi{color:var(--ok)}
+:root[data-theme="dark"] .pct-mid{color:#f5b301}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin:10px 2px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+
+/* ===================== Modal / toast / pantallas ===================== */
+.modal-bg{position:fixed;inset:0;background:rgba(10,10,12,.55);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+@media (min-width:700px){.modal-bg{align-items:center;padding:20px}}
+.modal{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
+@media (min-width:700px){.modal{border-radius:20px}}
+.modal.wide{max-width:980px}
+.modal h2{font-family:var(--display);font-weight:400;font-size:1.6rem;letter-spacing:.04em;margin:0 0 14px}
+.modal .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.notice{background:var(--accent-soft);color:var(--accent-strong);border-radius:12px;padding:10px 12px;font-size:.88rem;font-weight:500;margin-bottom:12px}
+.err{color:var(--bad);font-size:.88rem;min-height:1.2em;margin-top:6px}
+.picker{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:760px){.picker{grid-template-columns:1fr 1fr}}
+.picker .col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;max-height:46vh;overflow:auto}
+.pk{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px}
+.pk:hover{background:var(--surface-2)}
+.pk .grow .c{font-weight:700;font-size:.8rem;color:var(--accent-strong)}
+.pk .grow .d{font-size:.85rem}
+.mini-btn{border:1px solid var(--border);background:var(--surface);border-radius:8px;width:32px;height:32px;display:grid;place-items:center;flex:none}
+.mini-btn svg{width:16px;height:16px}
+.mini-btn:disabled{opacity:.3}
+.toasts{position:fixed;left:50%;transform:translateX(-50%);top:calc(66px + env(safe-area-inset-top));z-index:80;display:flex;flex-direction:column;gap:8px;width:min(92vw,420px);pointer-events:none}
+@media (min-width:900px){.toasts{top:auto;bottom:24px}}
+.toast{background:var(--header);color:var(--on-header);padding:12px 16px;border-radius:12px;box-shadow:var(--shadow);font-size:.92rem;animation:tin .2s}
+.toast.error{background:var(--bad);color:#fff}
+@keyframes tin{from{opacity:0;transform:translateY(-8px)}}
+.screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login{width:100%;max-width:400px;padding:28px 24px}
+.login .logo{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:22px}
+.login .logo svg{width:64px;height:64px}
+.login .logo .n{font-family:var(--display);font-size:2.6rem;letter-spacing:.08em;line-height:1}
+.pin-input{letter-spacing:.5em;text-align:center;font-size:1.5rem;font-weight:700}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+.center{text-align:center}
+</style>
+</head>
+<body>
+
+<div id="screen" class="screen hidden"></div>
+
+<div id="app" class="hidden">
+  <header class="hdr">
+    <div class="brand"><span id="brandIcon"></span><span id="brandName">Tilde</span><span class="ver" id="brandVer"></span></div>
+    <div class="sp"></div>
+    <div class="sync" id="sync" title="Estado de guardado"><span class="dot"></span><span id="syncTxt">Guardado</span></div>
+    <button class="btn-install hidden" id="btnInstall">Instalar</button>
+    <button class="icon-btn" id="btnTheme" title="Modo claro / oscuro" aria-label="Cambiar tema"></button>
+    <button class="icon-btn" id="btnLogout" title="Cerrar sesión" aria-label="Cerrar sesión"></button>
+  </header>
+  <div class="demo-bar hidden" id="demoBar">Modo demo — datos de prueba en memoria (no se guarda nada)</div>
+  <div class="layout">
+    <nav class="nav" id="nav"></nav>
+    <main id="main"></main>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div id="modalRoot"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Tilde — PWA de evaluaciones por examen · v1.0.0 · 10-oct-2026
+   Backend: Tilde_v1.0.0.gs (GAS Web App). Sin GAS_URL → modo demo.
+   ===================================================================== */
+const CONFIG = {
+  APP_NAME: 'Tilde',                 // parametrizable
+  APP_VERSION: '1.0.0',
+  GAS_URL: '',                       // URL /exec del Web App de Tilde
+  LS: 'tilde_',
+  TIMEOUT_MS: 30000,
+  RETRY_MS: 15000,
+  ACT_MIN: 10, ACT_MAX: 15           // rango recomendado (solo aviso)
+};
+const DEMO = !CONFIG.GAS_URL || new URLSearchParams(location.search).has('demo');
+const ESTADOS = {
+  C: { label: 'Correcto', short: 'Correcto', ic: 'check' },
+  I: { label: 'Incorrecto', short: 'Incorrecto', ic: 'x' },
+  N: { label: 'No responde', short: 'No resp.', ic: 'minus' }
+};
+
+/* ---------------- Íconos ---------------- */
+const ICONS = {
+  logo: '<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#26262a"/><path d="M17 33.5l10 10L47 21" fill="none" stroke="#b49ef0" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  minus: '<path d="M6 12h12"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  chev: '<path d="M9 5l7 7-7 7"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/>',
+  moon: '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
+  logout: '<path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4M10 16l-4-4 4-4M6 12h10"/>',
+  cargar: '<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/>',
+  examen: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  alumnos: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 016 5"/>',
+  actividades: '<path d="M4 6h16M4 12h16M4 18h10"/>',
+  reportes: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  up: '<path d="M6 15l6-6 6 6"/>',
+  down: '<path d="M6 9l6 6 6-6"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>'
+};
+function ic(n) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + ICONS[n] + '</svg>'; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const $ = s => document.querySelector(s);
+
+/* ---------------- Storage ---------------- */
+const store = {
+  get(k, def) { try { const v = localStorage.getItem(CONFIG.LS + k); return v == null ? def : JSON.parse(v); } catch (e) { return def; } },
+  set(k, v) { try { localStorage.setItem(CONFIG.LS + k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(CONFIG.LS + k); } catch (e) {} }
+};
+
+/* ---------------- Tema ---------------- */
+function applyTheme(t) {
+  if (!t) {
+    t = store.get('theme', null);
+    if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+  const b = $('#btnTheme'); if (b) b.innerHTML = ic(t === 'dark' ? 'sun' : 'moon');
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === 'dark' ? '#141416' : '#26262a';
+}
+function toggleTheme() {
+  const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  store.set('theme', t); applyTheme(t);
+}
+
+/* ---------------- Toast / modal ---------------- */
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'error' ? ' error' : '');
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), type === 'error' ? 6000 : 2600);
+}
+function openModal(html, wide) {
+  $('#modalRoot').innerHTML = '<div class="modal-bg" id="modalBg"><div class="modal' + (wide ? ' wide' : '') + '" role="dialog">' + html + '</div></div>';
+  $('#modalBg').addEventListener('click', e => { if (e.target.id === 'modalBg') closeModal(); });
+}
+function closeModal() { $('#modalRoot').innerHTML = ''; S.form = null; }
+function setBusy(btn, on) { if (btn) { btn.classList.toggle('busy', on); btn.disabled = on; } }
+
+/* =====================================================================
+   API
+   ===================================================================== */
+function getSession() { return store.get('session', null); }
+function netError(msg) { const e = new Error(msg || 'Sin conexión'); e.network = true; return e; }
+
+async function apiRaw(action, payload) {
+  if (DEMO) return MOCK.call(action, payload);
+  const ctrl = new AbortController();
+  const tmr = setTimeout(() => ctrl.abort(), CONFIG.TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(CONFIG.GAS_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action }, payload)), signal: ctrl.signal, redirect: 'follow'
+    });
+  } catch (e) { throw netError(); } finally { clearTimeout(tmr); }
+  if (!res.ok) throw netError('Error HTTP ' + res.status);
+  try { return await res.json(); } catch (e) { throw netError('Respuesta inválida del servidor'); }
+}
+
+async function api(action, data) {
+  const ses = getSession() || {};
+  const r = await apiRaw(action, { email: ses.email, token: ses.token, data });
+  if (r && r.motivo === 'sesion_invalida') { logout('Tu sesión venció. Ingresá de nuevo.'); throw new Error('sesion'); }
+  return r;
+}
+
+/* =====================================================================
+   Estado
+   ===================================================================== */
+const S = {
+  data: { alumnos: [], actividades: [], examenes: [], evaluaciones: [] },
+  view: 'cargar',
+  wiz: { step: 1, examenId: null, tab: 'pend', q: '', alumnoId: null, notas: {}, editando: false },
+  exq: '', alq: '', acq: '', verInactivos: false,
+  rep: { tab: 'examen', examenId: null, alumnoId: null, etqExamen: '*' },
+  form: null
+};
+let queue = store.get('queue', []);
+let flushing = false, retryTimer = null;
+
+const byApellido = (a, b) => (a.apellido + ' ' + a.nombre).localeCompare(b.apellido + ' ' + b.nombre, 'es');
+const alumno = id => S.data.alumnos.find(a => a.id === id);
+const examen = id => S.data.examenes.find(e => e.id === id);
+const actividad = c => S.data.actividades.find(a => a.codigo === c);
+const evalDe = (exId, alId) => S.data.evaluaciones.find(v => v.examenId === exId && v.alumnoId === alId);
+const evalsDeExamen = exId => S.data.evaluaciones.filter(v => v.examenId === exId);
+const fmtFecha = f => f && /^\d{4}-\d{2}-\d{2}/.test(f) ? f.slice(8, 10) + '/' + f.slice(5, 7) + '/' + f.slice(0, 4) : (f || '');
+const pct = (a, b) => b ? Math.round(a * 100 / b) : 0;
+const pctCls = p => p < 50 ? 'pct-lo' : p < 75 ? 'pct-mid' : 'pct-hi';
+function conteo(notas, codigos) {
+  const r = { C: 0, I: 0, N: 0, total: 0 };
+  (codigos || Object.keys(notas)).forEach(c => { const v = notas[c]; if (r[v] != null) { r[v]++; r.total++; } });
+  return r;
+}
+
+async function loadData() {
+  const r = await api('getData');
+  if (!r.ok) throw new Error(r.error || 'No se pudieron leer los datos');
+  S.data = { alumnos: r.alumnos, actividades: r.actividades, examenes: r.examenes, evaluaciones: r.evaluaciones };
+  queue.forEach(j => aplicarEvalLocal(j.data));   // lo que quedó sin subir sigue visible
+}
+
+/* ---------------- Cola de guardado (evaluaciones) ---------------- */
+function aplicarEvalLocal(d) {
+  const ex = evalDe(d.examenId, d.alumnoId);
+  if (ex) { ex.notas = Object.assign({}, d.notas); ex.fechaEdicion = new Date().toISOString(); }
+  else S.data.evaluaciones.push({ id: '', examenId: d.examenId, alumnoId: d.alumnoId, fechaCarga: new Date().toISOString(), fechaEdicion: '', notas: Object.assign({}, d.notas) });
+}
+function encolarEval(d) {
+  aplicarEvalLocal(d);
+  queue = queue.filter(j => !(j.data.examenId === d.examenId && j.data.alumnoId === d.alumnoId));
+  queue.push({ data: d, t: Date.now() });
+  store.set('queue', queue);
+  flushQueue();
+}
+function setSync(st) {
+  const el = $('#sync'); if (!el) return;
+  el.className = 'sync ' + st;
+  $('#syncTxt').textContent = st === 'saving' ? 'Guardando…' : st === 'pending' ? queue.length + ' sin guardar' : 'Guardado';
+}
+async function flushQueue() {
+  if (flushing) return;
+  flushing = true;
+  clearTimeout(retryTimer);
+  try {
+    while (queue.length) {
+      const job = queue[0];
+      setSync('saving');
+      let r;
+      try { r = await api('guardarEvaluacion', job.data); }
+      catch (e) { if (e.message === 'sesion') return; setSync('pending'); retryTimer = setTimeout(flushQueue, CONFIG.RETRY_MS); return; }
+      queue.shift(); store.set('queue', queue);
+      if (!r.ok) {
+        const al = alumno(job.data.alumnoId);
+        toast('No se guardó ' + (al ? al.apellido : '') + ': ' + (r.error || 'error'), 'error');
+        try { await loadData(); render(); } catch (e) {}
+      } else {
+        const v = evalDe(job.data.examenId, job.data.alumnoId); if (v && r.evalId) v.id = r.evalId;
+      }
+    }
+    setSync('ok');
+  } finally { flushing = false; }
+}
+window.addEventListener('online', () => flushQueue());
+window.addEventListener('beforeunload', e => { if (queue.length) { e.preventDefault(); e.returnValue = ''; } });
+
+/* =====================================================================
+   Login (pwa_pin + token de Tilde)
+   ===================================================================== */
+const MOTIVOS = {
+  no_encontrado: 'Ese mail no está habilitado.',
+  inactivo: 'El usuario está desactivado.',
+  bloqueado: 'Usuario bloqueado. Hay que desbloquearlo en la solapa usuarios_pin.',
+  bloqueado_ahora: 'Demasiados intentos: el usuario quedó bloqueado.',
+  error_envio_mail: 'No se pudo enviar el mail. Probá en un rato.',
+  pin_vencido: 'El código venció. Pedí uno nuevo.',
+  sin_pin_generado: 'Primero pedí un código.',
+  sin_token: 'Sesión inválida. Ingresá de nuevo.', token_invalido: 'Sesión inválida. Ingresá de nuevo.', sesion_vencida: 'Tu sesión venció. Ingresá de nuevo.'
+};
+function motivoTxt(r) {
+  if (r.motivo === 'cooldown') return 'Esperá ' + r.restanteSegundos + ' s para pedir otro código.';
+  if (r.motivo === 'pin_incorrecto') return 'Código incorrecto. Te quedan ' + r.restantes + ' intento(s).';
+  return MOTIVOS[r.motivo] || r.error || 'No se pudo completar.';
+}
+function showScreen(html) {
+  $('#app').classList.add('hidden');
+  const s = $('#screen'); s.classList.remove('hidden'); s.innerHTML = html;
+}
+function logoBlock() { return '<div class="logo">' + ICONS.logo + '<div class="n">' + esc(CONFIG.APP_NAME) + '</div><div class="muted small">Registro de evaluaciones</div></div>'; }
+
+function showLogin(msg, email) {
+  showScreen('<div class="card login">' + logoBlock() +
+    (DEMO ? '<div class="notice">Modo demo: cualquier mail, el código es <b>123456</b>.</div>' : '') +
+    '<form id="fEmail"><div class="field"><label for="lEmail">Tu mail</label><input class="input" id="lEmail" type="email" autocomplete="email" required value="' + esc(email || store.get('lastEmail', '')) + '"></div>' +
+    '<button class="btn primary block big" id="bEmail">Enviar código</button><div class="err" id="lErr">' + esc(msg || '') + '</div></form></div>');
+  $('#fEmail').addEventListener('submit', async e => {
+    e.preventDefault();
+    const em = $('#lEmail').value.trim().toLowerCase(), b = $('#bEmail');
+    setBusy(b, true); $('#lErr').textContent = '';
+    try {
+      const r = await apiRaw('solicitarPIN', { email: em });
+      if (r.ok || r.motivo === 'cooldown') { store.set('lastEmail', em); showPin(em, r.ok ? '' : motivoTxt(r)); }
+      else $('#lErr').textContent = motivoTxt(r);
+    } catch (err) { $('#lErr').textContent = 'Sin conexión. Revisá internet y probá de nuevo.'; }
+    setBusy(b, false);
+  });
+}
+function showPin(email, msg) {
+  showScreen('<div class="card login">' + logoBlock() +
+    '<p class="center small muted">Te mandamos un código de 6 dígitos a<br><b>' + esc(email) + '</b></p>' +
+    '<form id="fPin"><div class="field"><input class="input pin-input" id="lPin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="\\d{6}" required></div>' +
+    '<button class="btn primary block big" id="bPin">Ingresar</button><div class="err" id="lErr">' + esc(msg || '') + '</div></form>' +
+    '<div class="row" style="justify-content:space-between;margin-top:10px"><button class="btn sm" id="bOtro">Cambiar mail</button><button class="btn sm" id="bReenv">Reenviar código</button></div></div>');
+  $('#lPin').focus();
+  $('#bOtro').onclick = () => showLogin('', email);
+  $('#bReenv').onclick = async () => {
+    try { const r = await apiRaw('solicitarPIN', { email }); $('#lErr').textContent = r.ok ? 'Código reenviado.' : motivoTxt(r); }
+    catch (e) { $('#lErr').textContent = 'Sin conexión.'; }
+  };
+  $('#fPin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const b = $('#bPin'); setBusy(b, true); $('#lErr').textContent = '';
+    try {
+      const r = await apiRaw('validarPIN', { email, pin: $('#lPin').value.trim() });
+      if (r.ok) { store.set('session', { email, token: r.token, expira: r.expira }); await enterApp(); return; }
+      if (r.motivo === 'bloqueado_ahora') { showLogin(motivoTxt(r), email); return; }
+      $('#lErr').textContent = motivoTxt(r);
+    } catch (err) { $('#lErr').textContent = err.message === 'sesion' ? '' : 'Sin conexión. Probá de nuevo.'; }
+    setBusy(b, false);
+  });
+}
+function showSplash(txt) { showScreen('<div class="center"><div class="spinner"></div><div class="muted">' + esc(txt) + '</div></div>'); }
+function showOffline() {
+  showScreen('<div class="card login center">' + logoBlock() + '<p>Sin conexión con el servidor.</p><p class="muted small">Tu sesión sigue guardada. Revisá internet y reintentá.</p><button class="btn primary block big" id="bRetry">Reintentar</button></div>');
+  $('#bRetry').onclick = boot;
+}
+function logout(msg) {
+  store.del('session'); closeModal();
+  showLogin(msg || '');
+}
+
+async function enterApp() {
+  showSplash('Cargando datos…');
+  try { await loadData(); }
+  catch (e) { if (e.message === 'sesion') return; if (e.network) { showOffline(); return; } showLogin(e.message); return; }
+  $('#screen').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  render();
+  if (queue.length) flushQueue(); else setSync('ok');
+}
+
+async function boot() {
+  applyTheme();
+  const ses = getSession();
+  if (!ses || !ses.token || (ses.expira && new Date(ses.expira) < new Date())) { store.del('session'); showLogin(); return; }
+  showSplash('Validando usuario…');
+  let r;
+  try { r = await apiRaw('validarSesion', { email: ses.email, token: ses.token }); }
+  catch (e) { showOffline(); return; }
+  if (!r.ok) { store.del('session'); showLogin(motivoTxt(r), ses.email); return; }
+  await enterApp();
+}
+
+/* =====================================================================
+   Navegación
+   ===================================================================== */
+const VIEWS = [
+  { id: 'cargar', label: 'Cargar', ic: 'cargar' },
+  { id: 'examenes', label: 'Exámenes', ic: 'examen' },
+  { id: 'alumnos', label: 'Alumnos', ic: 'alumnos' },
+  { id: 'actividades', label: 'Actividades', ic: 'actividades' },
+  { id: 'reportes', label: 'Reportes', ic: 'reportes' }
+];
+function renderNav() {
+  $('#nav').innerHTML = VIEWS.map(v => '<button data-act="nav" data-v="' + v.id + '" class="' + (S.view === v.id ? 'on' : '') + '">' + ic(v.ic) + '<span>' + v.label + '</span></button>').join('');
+}
+function go(view) { S.view = view; render(); window.scrollTo(0, 0); }
+function render() {
+  renderNav();
+  const fn = { cargar: viewCargar, examenes: viewExamenes, alumnos: viewAlumnos, actividades: viewActividades, reportes: viewReportes }[S.view];
+  $('#main').innerHTML = fn();
+}
+
+/* =====================================================================
+   CARGAR — wizard de 4 pasos
+   ===================================================================== */
+function stepsBar(n) { return '<div class="steps">' + [1, 2, 3, 4].map(i => '<div class="' + (i <= n ? 'on' : '') + '"></div>').join('') + '</div>'; }
+function wzHead(back, step, t, s) {
+  return '<div class="wz-head">' + (back ? '<button class="back" data-act="wzBack" aria-label="Volver">' + ic('back') + '</button>' : '') +
+    '<div class="grow"><div class="stepname">' + step + '</div><div class="t">' + esc(t) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div></div>';
+}
+function viewCargar() {
+  const w = S.wiz;
+  if (w.step > 1 && !examen(w.examenId)) w.step = 1;
+  return '<div class="wrap">' + stepsBar(w.step) + [null, wz1, wz2, wz3, wz4][w.step]() + '</div>';
+}
+function wz1() {
+  const exs = S.data.examenes.filter(e => e.activo).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const nAl = S.data.alumnos.filter(a => a.activo).length;
+  let h = wzHead(false, 'Paso 1 de 4', 'Elegí el examen');
+  if (!exs.length) return h + '<div class="card empty">No hay exámenes activos.<br><br><button class="btn primary" data-act="nav" data-v="examenes">Crear un examen</button></div>';
+  h += '<div class="list">' + exs.map(e => {
+    const n = evalsDeExamen(e.id).filter(v => (alumno(v.alumnoId) || {}).activo).length;
+    return '<button class="item" data-act="wzExamen" data-id="' + e.id + '"><div class="grow"><div class="t">' + esc(e.nombre) + '</div>' +
+      '<div class="s">' + fmtFecha(e.fecha) + ' · ' + e.codigos.length + ' actividades · ' + n + '/' + nAl + ' rendidos</div>' +
+      '<div class="bar" style="margin-top:8px"><span style="width:' + pct(n, nAl) + '%"></span></div></div>' + ic('chev').replace('<svg', '<svg class="chev"') + '</button>';
+  }).join('') + '</div>';
+  return h;
+}
+function wz2() {
+  const w = S.wiz, ex = examen(w.examenId);
+  const activos = S.data.alumnos.filter(a => a.activo).sort(byApellido);
+  const rend = activos.filter(a => evalDe(ex.id, a.id));
+  const pend = activos.filter(a => !evalDe(ex.id, a.id));
+  const q = w.q.trim().toLowerCase();
+  const lista = (w.tab === 'pend' ? pend : rend).filter(a => !q || (a.apellido + ' ' + a.nombre).toLowerCase().includes(q));
+  let h = wzHead(true, 'Paso 2 de 4', 'Elegí el alumno', ex.nombre);
+  h += '<div class="seg" style="margin-bottom:10px"><button data-act="wzTab" data-v="pend" class="' + (w.tab === 'pend' ? 'on' : '') + '">Pendientes (' + pend.length + ')</button>' +
+    '<button data-act="wzTab" data-v="rend" class="' + (w.tab === 'rend' ? 'on' : '') + '">Rendidos (' + rend.length + ')</button></div>';
+  h += '<div class="search" style="margin-bottom:10px">' + ic('search') + '<input class="input" id="wzQ" placeholder="Buscar alumno…" value="' + esc(w.q) + '" data-inp="wzQ"></div>';
+  if (!lista.length) return h + '<div class="card empty">' + (q ? 'Sin resultados.' : w.tab === 'pend' ? '¡Todos rindieron este examen! 🎉' : 'Todavía nadie rindió este examen.') + '</div>';
+  h += '<div class="list" id="wzList">' + lista.map(a => {
+    let extra = '';
+    if (w.tab === 'rend') {
+      const c = conteo(evalDe(ex.id, a.id).notas, ex.codigos);
+      extra = '<div class="mini"><span class="chip c">' + c.C + '</span><span class="chip i">' + c.I + '</span><span class="chip n">' + c.N + '</span></div>';
+    }
+    return '<button class="item" data-act="wzAlumno" data-id="' + a.id + '"><div class="grow"><div class="t">' + esc(a.apellido) + ', ' + esc(a.nombre) + '</div><div class="s">' + a.id + '</div></div>' + extra + ic('chev').replace('<svg', '<svg class="chev"') + '</button>';
+  }).join('') + '</div>';
+  return h;
+}
+function wz3() {
+  const w = S.wiz, ex = examen(w.examenId), al = alumno(w.alumnoId);
+  const hechas = ex.codigos.filter(c => w.notas[c]).length;
+  let h = wzHead(true, 'Paso 3 de 4' + (w.editando ? ' · editando' : ''), al.apellido + ', ' + al.nombre, ex.nombre);
+  h += '<div class="list">' + ex.codigos.map((c, i) => {
+    const a = actividad(c) || { descripcion: '(actividad no encontrada)' };
+    const v = w.notas[c] || '';
+    return '<div class="act-row ' + v + '" id="row-' + esc(c) + '"><div class="act-head"><span class="act-num">' + (i + 1) + '</span><div class="grow"><div class="act-code">' + esc(c) + '</div><div class="act-desc">' + esc(a.descripcion) + '</div></div></div>' +
+      '<div class="grades">' + ['C', 'I', 'N'].map(k => '<button class="g ' + k + (v === k ? ' sel' : '') + '" data-act="grade" data-c="' + esc(c) + '" data-v="' + k + '" aria-pressed="' + (v === k) + '">' + ic(ESTADOS[k].ic) + '<span>' + ESTADOS[k].short + '</span></button>').join('') + '</div></div>';
+  }).join('') + '</div>';
+  h += '<div class="sticky-bot"><div class="card"><div class="grow"><div class="bar"><span id="wzProg" style="width:' + pct(hechas, ex.codigos.length) + '%"></span></div><div class="small muted" style="margin-top:5px" id="wzProgTxt">' + hechas + ' de ' + ex.codigos.length + ' calificadas</div></div>' +
+    '<button class="btn primary big" data-act="wzRevisar" id="wzRev">Revisar</button></div></div>';
+  return h;
+}
+function wz4() {
+  const w = S.wiz, ex = examen(w.examenId), al = alumno(w.alumnoId);
+  const c = conteo(w.notas, ex.codigos);
+  let h = wzHead(true, 'Paso 4 de 4', 'Confirmá la evaluación', al.apellido + ', ' + al.nombre + ' · ' + ex.nombre);
+  h += '<div class="sum3">' + ['C', 'I', 'N'].map(k => '<div class="card"><div class="v" style="color:var(--' + { C: 'ok', I: 'bad', N: 'nr' }[k] + ')">' + c[k] + '</div><div class="l">' + ESTADOS[k].label + '</div><div class="p">' + pct(c[k], c.total) + '%</div></div>').join('') + '</div>';
+  h += '<div class="card" style="margin-bottom:14px">' + ex.codigos.map((cod, i) => {
+    const a = actividad(cod) || {};
+    return '<div class="row" style="padding:10px 14px;' + (i ? 'border-top:1px solid var(--border)' : '') + '"><span class="dotg ' + w.notas[cod] + '"></span><div class="grow"><b class="small">' + esc(cod) + '</b> <span class="small">' + esc(a.descripcion) + '</span></div><span class="chip ' + w.notas[cod].toLowerCase() + '">' + ESTADOS[w.notas[cod]].label + '</span></div>';
+  }).join('') + '</div>';
+  h += '<div class="row"><button class="btn big" data-act="wzBack">Corregir</button><button class="btn primary big grow" data-act="wzConfirmar">' + (w.editando ? 'Guardar cambios' : 'Confirmar y guardar') + '</button></div>';
+  return h;
+}
+function wzGrade(btn) {
+  const w = S.wiz, c = btn.dataset.c, v = btn.dataset.v;
+  w.notas[c] = v;
+  const row = document.getElementById('row-' + c);
+  row.className = 'act-row ' + v;
+  row.querySelectorAll('.g').forEach(b => { const on = b.dataset.v === v; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
+  const ex = examen(w.examenId), hechas = ex.codigos.filter(k => w.notas[k]).length;
+  $('#wzProg').style.width = pct(hechas, ex.codigos.length) + '%';
+  $('#wzProgTxt').textContent = hechas + ' de ' + ex.codigos.length + ' calificadas';
+}
+function wzRevisar() {
+  const w = S.wiz, ex = examen(w.examenId);
+  const falta = ex.codigos.find(c => !w.notas[c]);
+  if (falta) {
+    const row = document.getElementById('row-' + falta);
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
+    toast('Falta calificar ' + falta);
+    return;
+  }
+  w.step = 4; render(); window.scrollTo(0, 0);
+}
+function wzConfirmar() {
+  const w = S.wiz, ex = examen(w.examenId), al = alumno(w.alumnoId);
+  const notas = {}; ex.codigos.forEach(c => notas[c] = w.notas[c]);
+  encolarEval({ examenId: ex.id, alumnoId: al.id, notas });
+  toast((w.editando ? 'Actualizado: ' : 'Guardado: ') + al.apellido + ', ' + al.nombre);
+  w.tab = w.editando ? 'rend' : 'pend';
+  w.step = 2; w.alumnoId = null; w.notas = {}; w.editando = false; w.q = '';
+  render(); window.scrollTo(0, 0);
+}
+
+/* =====================================================================
+   EXÁMENES
+   ===================================================================== */
+function viewExamenes() {
+  const q = S.exq.trim().toLowerCase();
+  const exs = S.data.examenes.filter(e => (S.verInactivos || e.activo) && (!q || e.nombre.toLowerCase().includes(q))).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  let h = '<div class="wrap wide"><h1 class="title">Exámenes</h1><p class="subtitle">Cada examen elige sus actividades del catálogo. Con el primer alumno evaluado, sus actividades quedan bloqueadas.</p>';
+  h += toolbarHtml('exq', S.exq, 'Buscar examen…', 'nuevoExamen', 'Nuevo examen');
+  if (!exs.length) return h + '<div class="card empty">No hay exámenes.</div></div>';
+  h += '<div class="list">' + exs.map(e => {
+    const n = evalsDeExamen(e.id).length;
+    return '<div class="item"><div class="grow"><div class="t">' + esc(e.nombre) + (e.activo ? '' : ' <span class="chip off">inactivo</span>') + '</div>' +
+      '<div class="s">' + e.id + ' · ' + fmtFecha(e.fecha) + ' · ' + e.codigos.length + ' actividades · ' + n + ' evaluados' + (n ? ' · 🔒 actividades bloqueadas' : '') + '</div></div>' +
+      '<div class="row wrapr" style="justify-content:flex-end"><button class="btn sm" data-act="editExamen" data-id="' + e.id + '">' + ic('edit') + 'Editar</button>' +
+      '<button class="btn sm" data-act="dupExamen" data-id="' + e.id + '">' + ic('copy') + 'Duplicar</button>' +
+      '<button class="btn sm ' + (e.activo ? 'danger' : '') + '" data-act="toggleExamen" data-id="' + e.id + '">' + (e.activo ? 'Dar de baja' : 'Reactivar') + '</button></div></div>';
+  }).join('') + '</div></div>';
+  return h;
+}
+function toolbarHtml(key, val, ph, act, label) {
+  return '<div class="toolbar"><div class="search grow" style="min-width:200px">' + ic('search') + '<input class="input" placeholder="' + ph + '" value="' + esc(val) + '" data-inp="' + key + '"></div>' +
+    '<label class="row small muted" style="gap:6px"><input type="checkbox" data-act="verInactivos" ' + (S.verInactivos ? 'checked' : '') + '> Ver inactivos</label>' +
+    '<button class="btn primary" data-act="' + act + '">' + ic('plus') + label + '</button></div>';
+}
+function abrirFormExamen(id, duplicar) {
+  const e = id ? examen(id) : null;
+  S.form = {
+    tipo: 'examen', id: (e && !duplicar) ? e.id : '', nombre: e ? (duplicar ? e.nombre + ' (copia)' : e.nombre) : '',
+    fecha: e && !duplicar ? e.fecha : new Date().toISOString().slice(0, 10), codigos: e ? e.codigos.slice() : [],
+    q: '', tag: '', locked: !!(e && !duplicar && evalsDeExamen(e.id).length), err: ''
+  };
+  renderFormExamen();
+}
+function renderFormExamen() {
+  const f = S.form;
+  const tags = [...new Set(S.data.actividades.filter(a => a.activo).flatMap(a => a.etiquetas))].sort((a, b) => a.localeCompare(b, 'es'));
+  const q = f.q.trim().toLowerCase();
+  const disp = S.data.actividades.filter(a => a.activo && !f.codigos.includes(a.codigo) && (!f.tag || a.etiquetas.includes(f.tag)) &&
+    (!q || (a.codigo + ' ' + a.descripcion).toLowerCase().includes(q)));
+  const n = f.codigos.length;
+  const aviso = n && (n < CONFIG.ACT_MIN || n > CONFIG.ACT_MAX) ? ' <span class="chip">recomendado ' + CONFIG.ACT_MIN + '–' + CONFIG.ACT_MAX + '</span>' : '';
+  let h = '<h2>' + (f.id ? 'Editar examen' : 'Nuevo examen') + '</h2>';
+  h += '<div class="field"><label>Nombre (incluí materia, curso, año y colegio)</label><input class="input" data-fi="nombre" value="' + esc(f.nombre) + '" placeholder="Matemática 2 – 3°A – 2026 – Esc. N°5"></div>';
+  h += '<div class="field" style="max-width:220px"><label>Fecha</label><input class="input" type="date" data-fi="fecha" value="' + esc(f.fecha) + '"></div>';
+  if (f.locked) h += '<div class="notice">🔒 Ya hay alumnos evaluados: las actividades no se pueden cambiar. Si necesitás otra combinación, usá "Duplicar".</div>';
+  h += '<div class="picker">';
+  if (!f.locked) {
+    h += '<div class="col"><div class="small muted" style="font-weight:700;margin:2px 4px 8px">CATÁLOGO</div>' +
+      '<div class="search" style="margin-bottom:8px">' + ic('search') + '<input class="input" data-fi="q" placeholder="Buscar código o descripción…" value="' + esc(f.q) + '"></div>' +
+      '<div class="row wrapr" style="gap:6px;margin-bottom:8px"><button class="chip ' + (!f.tag ? 'acc' : '') + '" data-act="fTag" data-v="">todas</button>' +
+      tags.map(t => '<button class="chip ' + (f.tag === t ? 'acc' : '') + '" data-act="fTag" data-v="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>' +
+      (disp.length ? disp.map(a => '<div class="pk"><div class="grow"><div class="c">' + esc(a.codigo) + '</div><div class="d">' + esc(a.descripcion) + '</div></div><button class="mini-btn" data-act="fAdd" data-c="' + esc(a.codigo) + '" title="Agregar">' + ic('plus') + '</button></div>').join('') : '<div class="empty small">Nada para agregar.</div>') + '</div>';
+  }
+  h += '<div class="col"><div class="small muted" style="font-weight:700;margin:2px 4px 8px">EN EL EXAMEN (' + n + ')' + aviso + '</div>' +
+    (n ? f.codigos.map((c, i) => {
+      const a = actividad(c) || {};
+      return '<div class="pk"><span class="act-num" style="font-size:1.1rem">' + (i + 1) + '</span><div class="grow"><div class="c">' + esc(c) + '</div><div class="d">' + esc(a.descripcion) + '</div></div>' +
+        (f.locked ? '' : '<button class="mini-btn" data-act="fUp" data-i="' + i + '" ' + (i ? '' : 'disabled') + ' title="Subir">' + ic('up') + '</button><button class="mini-btn" data-act="fDown" data-i="' + i + '" ' + (i < n - 1 ? '' : 'disabled') + ' title="Bajar">' + ic('down') + '</button><button class="mini-btn" data-act="fDel" data-i="' + i + '" title="Quitar">' + ic('x') + '</button>') + '</div>';
+    }).join('') : '<div class="empty small">Agregá actividades desde el catálogo.</div>') + '</div></div>';
+  h += '<div class="err">' + esc(f.err) + '</div><div class="acts"><button class="btn" data-act="closeModal">Cancelar</button><button class="btn primary" data-act="saveExamen">Guardar examen</button></div>';
+  const st = document.querySelector('.modal'); const scr = st ? st.scrollTop : 0;
+  const foc = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.fi : null;
+  openModal(h, true);
+  document.querySelector('.modal').scrollTop = scr;
+  if (foc === 'q') { const el = document.querySelector('[data-fi="q"]'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+}
+async function saveExamen(btn) {
+  const f = S.form;
+  if (!f.nombre.trim()) { f.err = 'Poné un nombre.'; renderFormExamen(); return; }
+  if (!f.codigos.length) { f.err = 'Agregá al menos una actividad.'; renderFormExamen(); return; }
+  setBusy(btn, true);
+  try {
+    const r = await api('guardarExamen', { id: f.id, nombre: f.nombre, fecha: f.fecha, codigos: f.codigos });
+    if (!r.ok) { f.err = r.error; renderFormExamen(); return; }
+    const i = S.data.examenes.findIndex(e => e.id === r.examen.id);
+    if (i >= 0) S.data.examenes[i] = r.examen; else S.data.examenes.push(r.examen);
+    closeModal(); toast('Examen guardado'); render();
+  } catch (e) { if (e.message !== 'sesion') toast('Sin conexión: no se guardó.', 'error'); setBusy(btn, false); }
+}
+
+/* =====================================================================
+   ALUMNOS
+   ===================================================================== */
+function viewAlumnos() {
+  const q = S.alq.trim().toLowerCase();
+  const als = S.data.alumnos.filter(a => (S.verInactivos || a.activo) && (!q || (a.apellido + ' ' + a.nombre + ' ' + a.id).toLowerCase().includes(q))).sort(byApellido);
+  let h = '<div class="wrap wide"><h1 class="title">Alumnos</h1><p class="subtitle">' + S.data.alumnos.filter(a => a.activo).length + ' activos. Para carga masiva usá el menú del Sheet: <b>' + esc(CONFIG.APP_NAME) + ' Admin › Importar alumnos</b>.</p>';
+  h += toolbarHtml('alq', S.alq, 'Buscar alumno…', 'nuevoAlumno', 'Nuevo alumno');
+  if (!als.length) return h + '<div class="card empty">No hay alumnos.</div></div>';
+  h += '<div class="list">' + als.map(a => {
+    const n = S.data.evaluaciones.filter(v => v.alumnoId === a.id).length;
+    return '<div class="item"><div class="grow"><div class="t">' + esc(a.apellido) + ', ' + esc(a.nombre) + (a.activo ? '' : ' <span class="chip off">inactivo</span>') + '</div><div class="s">' + a.id + ' · ' + n + ' exámenes rendidos</div></div>' +
+      '<div class="row wrapr" style="justify-content:flex-end"><button class="btn sm" data-act="editAlumno" data-id="' + a.id + '">' + ic('edit') + 'Editar</button>' +
+      '<button class="btn sm ' + (a.activo ? 'danger' : '') + '" data-act="toggleAlumno" data-id="' + a.id + '">' + (a.activo ? 'Dar de baja' : 'Reactivar') + '</button></div></div>';
+  }).join('') + '</div></div>';
+  return h;
+}
+function abrirFormAlumno(id) {
+  const a = id ? alumno(id) : null;
+  openModal('<h2>' + (a ? 'Editar alumno · ' + a.id : 'Nuevo alumno') + '</h2>' +
+    '<form id="fAl"><div class="field"><label>Nombre</label><input class="input" id="alN" required value="' + esc(a ? a.nombre : '') + '"></div>' +
+    '<div class="field"><label>Apellido</label><input class="input" id="alA" required value="' + esc(a ? a.apellido : '') + '"></div>' +
+    (a ? '' : '<p class="small muted">El ID se genera solo.</p>') +
+    '<div class="err" id="alErr"></div><div class="acts"><button type="button" class="btn" data-act="closeModal">Cancelar</button><button class="btn primary" id="alSave">Guardar</button></div></form>');
+  $('#alN').focus();
+  $('#fAl').addEventListener('submit', async e => {
+    e.preventDefault();
+    const b = $('#alSave'); setBusy(b, true);
+    try {
+      const r = await api('guardarAlumno', { id: a ? a.id : '', nombre: $('#alN').value, apellido: $('#alA').value });
+      if (!r.ok) { $('#alErr').textContent = r.error; setBusy(b, false); return; }
+      const i = S.data.alumnos.findIndex(x => x.id === r.alumno.id);
+      if (i >= 0) S.data.alumnos[i] = r.alumno; else S.data.alumnos.push(r.alumno);
+      closeModal(); toast('Alumno guardado: ' + r.alumno.id); render();
+    } catch (err) { if (err.message !== 'sesion') { $('#alErr').textContent = 'Sin conexión: no se guardó.'; setBusy(b, false); } }
+  });
+}
+
+/* =====================================================================
+   ACTIVIDADES (catálogo)
+   ===================================================================== */
+function viewActividades() {
+  const q = S.acq.trim().toLowerCase();
+  const acs = S.data.actividades.filter(a => (S.verInactivos || a.activo) && (!q || (a.codigo + ' ' + a.descripcion + ' ' + a.etiquetas.join(' ')).toLowerCase().includes(q)))
+    .sort((a, b) => a.codigo.localeCompare(b.codigo));
+  let h = '<div class="wrap wide"><h1 class="title">Actividades</h1><p class="subtitle">Catálogo reutilizable. Las etiquetas agrupan actividades para el análisis.</p>';
+  h += toolbarHtml('acq', S.acq, 'Buscar código, descripción o etiqueta…', 'nuevaActividad', 'Nueva actividad');
+  if (!acs.length) return h + '<div class="card empty">No hay actividades.</div></div>';
+  h += '<div class="list">' + acs.map(a => {
+    const usos = S.data.examenes.filter(e => e.codigos.includes(a.codigo)).length;
+    return '<div class="item"><div class="grow"><div class="t"><span style="color:var(--accent-strong)">' + esc(a.codigo) + '</span> · ' + esc(a.descripcion) + (a.activo ? '' : ' <span class="chip off">inactiva</span>') + '</div>' +
+      '<div class="row wrapr" style="gap:5px;margin-top:5px">' + a.etiquetas.map(t => '<span class="chip acc">' + esc(t) + '</span>').join('') + '<span class="s">en ' + usos + ' examen(es)</span></div></div>' +
+      '<div class="row wrapr" style="justify-content:flex-end"><button class="btn sm" data-act="editActividad" data-c="' + esc(a.codigo) + '">' + ic('edit') + 'Editar</button>' +
+      '<button class="btn sm ' + (a.activo ? 'danger' : '') + '" data-act="toggleActividad" data-c="' + esc(a.codigo) + '">' + (a.activo ? 'Dar de baja' : 'Reactivar') + '</button></div></div>';
+  }).join('') + '</div></div>';
+  return h;
+}
+function abrirFormActividad(cod) {
+  const a = cod ? actividad(cod) : null;
+  const tags = [...new Set(S.data.actividades.flatMap(x => x.etiquetas))].sort((x, y) => x.localeCompare(y, 'es'));
+  openModal('<h2>' + (a ? 'Editar actividad' : 'Nueva actividad') + '</h2>' +
+    '<form id="fAc"><div class="field"><label>Código nemotécnico</label><input class="input" id="acC" required maxlength="20" style="text-transform:uppercase" value="' + esc(a ? a.codigo : '') + '" ' + (a ? 'disabled' : '') + ' placeholder="SUM03"></div>' +
+    '<div class="field"><label>Descripción</label><input class="input" id="acD" required value="' + esc(a ? a.descripcion : '') + '"></div>' +
+    '<div class="field"><label>Etiquetas (separadas por coma)</label><input class="input" id="acE" value="' + esc(a ? a.etiquetas.join(', ') : '') + '" placeholder="cálculo, suma"></div>' +
+    (tags.length ? '<div class="row wrapr" style="gap:6px;margin:-6px 0 12px">' + tags.map(t => '<button type="button" class="chip" data-act="addTag" data-v="' + esc(t) + '">+ ' + esc(t) + '</button>').join('') + '</div>' : '') +
+    (a ? '<p class="small muted">El código no se cambia: está atado a las evaluaciones.</p>' : '') +
+    '<div class="err" id="acErr"></div><div class="acts"><button type="button" class="btn" data-act="closeModal">Cancelar</button><button class="btn primary" id="acSave">Guardar</button></div></form>');
+  (a ? $('#acD') : $('#acC')).focus();
+  $('#fAc').addEventListener('submit', async e => {
+    e.preventDefault();
+    const b = $('#acSave'); setBusy(b, true);
+    try {
+      const r = await api('guardarActividad', { nuevo: !a, codigo: a ? a.codigo : $('#acC').value, descripcion: $('#acD').value, etiquetas: $('#acE').value });
+      if (!r.ok) { $('#acErr').textContent = r.error; setBusy(b, false); return; }
+      const i = S.data.actividades.findIndex(x => x.codigo === r.actividad.codigo);
+      if (i >= 0) S.data.actividades[i] = r.actividad; else S.data.actividades.push(r.actividad);
+      closeModal(); toast('Actividad guardada: ' + r.actividad.codigo); render();
+    } catch (err) { if (err.message !== 'sesion') { $('#acErr').textContent = 'Sin conexión: no se guardó.'; setBusy(b, false); } }
+  });
+}
+
+async function toggleEstado(tipo, key, btn) {
+  const map = {
+    alumno: { act: 'estadoAlumno', obj: alumno(key), data: o => ({ id: o.id, activo: !o.activo }) },
+    actividad: { act: 'estadoActividad', obj: actividad(key), data: o => ({ codigo: o.codigo, activo: !o.activo }) },
+    examen: { act: 'estadoExamen', obj: examen(key), data: o => ({ id: o.id, activo: !o.activo }) }
+  }[tipo];
+  const o = map.obj;
+  if (o.activo && !confirm('¿Dar de baja? No se borra nada: deja de aparecer para cargar y se puede reactivar.')) return;
+  setBusy(btn, true);
+  try {
+    const r = await api(map.act, map.data(o));
+    if (!r.ok) { toast(r.error, 'error'); setBusy(btn, false); return; }
+    o.activo = !o.activo; render();
+  } catch (e) { if (e.message !== 'sesion') { toast('Sin conexión: no se guardó.', 'error'); setBusy(btn, false); } }
+}
+
+/* =====================================================================
+   REPORTES
+   ===================================================================== */
+function viewReportes() {
+  const r = S.rep;
+  let h = '<div class="wrap wide"><h1 class="title">Reportes</h1><p class="subtitle">% de correctas sobre el total de actividades calificadas ("No responde" cuenta como no correcta).</p>';
+  h += '<div class="seg" style="margin-bottom:14px;max-width:520px">' + [['examen', 'Por examen'], ['alumno', 'Por alumno'], ['etiqueta', 'Por etiqueta']]
+    .map(([k, l]) => '<button data-act="repTab" data-v="' + k + '" class="' + (r.tab === k ? 'on' : '') + '">' + l + '</button>').join('') + '</div>';
+  h += { examen: repExamen, alumno: repAlumno, etiqueta: repEtiqueta }[r.tab]();
+  return h + '</div>';
+}
+function selectHtml(key, opts, val, extra) {
+  return '<select class="input" data-sel="' + key + '" style="max-width:520px">' + (extra || '') + opts.map(o => '<option value="' + esc(o[0]) + '"' + (o[0] === val ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select>';
+}
+const legend = '<div class="legend"><span><span class="cell C">✓</span>Correcto</span><span><span class="cell I">✗</span>Incorrecto</span><span><span class="cell N">–</span>No responde</span></div>';
+function repExamen() {
+  const exs = S.data.examenes.slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
+  if (!exs.length) return '<div class="card empty">No hay exámenes.</div>';
+  if (!examen(S.rep.examenId)) S.rep.examenId = (exs.find(e => evalsDeExamen(e.id).length) || exs[0]).id;
+  const ex = examen(S.rep.examenId);
+  let h = '<div class="toolbar">' + selectHtml('repExamen', exs.map(e => [e.id, e.nombre + ' · ' + fmtFecha(e.fecha)]), ex.id) + '</div>';
+  const evs = evalsDeExamen(ex.id).map(v => ({ v, a: alumno(v.alumnoId) })).filter(x => x.a).sort((x, y) => byApellido(x.a, y.a));
+  const activos = S.data.alumnos.filter(a => a.activo).length;
+  if (!evs.length) return h + '<div class="card empty">Nadie rindió todavía este examen.</div>';
+  const porAct = ex.codigos.map(c => { const k = { C: 0, I: 0, N: 0 }; evs.forEach(x => { const n = x.v.notas[c]; if (k[n] != null) k[n]++; }); return { c, k, p: pct(k.C, evs.length) }; });
+  const tot = evs.reduce((s, x) => s + conteo(x.v.notas, ex.codigos).C, 0);
+  const prom = pct(tot, evs.length * ex.codigos.length);
+  const peor = porAct.slice().sort((a, b) => a.p - b.p)[0];
+  h += '<div class="kpis"><div class="card kpi"><div class="v">' + evs.length + '/' + activos + '</div><div class="l">rindieron</div></div>' +
+    '<div class="card kpi"><div class="v ' + pctCls(prom) + '">' + prom + '%</div><div class="l">correctas del grupo</div></div>' +
+    '<div class="card kpi"><div class="v">' + esc(peor.c) + '</div><div class="l">la que más costó (' + peor.p + '% correctas)</div></div></div>';
+  h += '<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="stick">Alumno</th>' + ex.codigos.map(c => '<th class="ctr" title="' + esc((actividad(c) || {}).descripcion) + '">' + esc(c) + '</th>').join('') + '<th class="ctr">% ✓</th></tr></thead><tbody>' +
+    evs.map(x => {
+      const k = conteo(x.v.notas, ex.codigos), p = pct(k.C, ex.codigos.length);
+      return '<tr><td class="stick"><b>' + esc(x.a.apellido) + '</b>, ' + esc(x.a.nombre) + '</td>' + ex.codigos.map(c => { const n = x.v.notas[c]; return '<td class="ctr"><span class="cell ' + (n || 'x') + '">' + ({ C: '✓', I: '✗', N: '–' }[n] || '·') + '</span></td>'; }).join('') +
+        '<td class="ctr"><b class="' + pctCls(p) + '">' + p + '%</b></td></tr>';
+    }).join('') + '</tbody><tfoot><tr><td class="stick">% correctas</td>' + porAct.map(x => '<td class="ctr ' + pctCls(x.p) + '">' + x.p + '%</td>').join('') + '<td class="ctr ' + pctCls(prom) + '">' + prom + '%</td></tr></tfoot></table></div>' + legend;
+  return h;
+}
+function repAlumno() {
+  const als = S.data.alumnos.slice().sort(byApellido);
+  if (!als.length) return '<div class="card empty">No hay alumnos.</div>';
+  if (!alumno(S.rep.alumnoId)) S.rep.alumnoId = als[0].id;
+  const al = alumno(S.rep.alumnoId);
+  let h = '<div class="toolbar">' + selectHtml('repAlumno', als.map(a => [a.id, a.apellido + ', ' + a.nombre + (a.activo ? '' : ' (inactivo)')]), al.id) + '</div>';
+  const evs = S.data.evaluaciones.filter(v => v.alumnoId === al.id).map(v => ({ v, e: examen(v.examenId) })).filter(x => x.e).sort((a, b) => a.e.fecha.localeCompare(b.e.fecha));
+  if (!evs.length) return h + '<div class="card empty">Todavía no rindió ningún examen.</div>';
+  h += '<div class="tbl-wrap" style="margin-bottom:16px"><table class="tbl"><thead><tr><th>Examen</th><th>Fecha</th><th class="ctr">✓</th><th class="ctr">✗</th><th class="ctr">–</th><th style="min-width:160px">Distribución</th><th class="ctr">% ✓</th></tr></thead><tbody>' +
+    evs.map(x => { const k = conteo(x.v.notas, x.e.codigos), p = pct(k.C, k.total); return '<tr><td>' + esc(x.e.nombre) + '</td><td>' + fmtFecha(x.e.fecha) + '</td><td class="ctr">' + k.C + '</td><td class="ctr">' + k.I + '</td><td class="ctr">' + k.N + '</td><td>' + stackBar(k) + '</td><td class="ctr"><b class="' + pctCls(p) + '">' + p + '%</b></td></tr>'; }).join('') +
+    '</tbody></table></div>';
+  const tags = agruparEtiquetas(evs.map(x => ({ notas: x.v.notas, codigos: x.e.codigos })));
+  h += '<div class="small muted" style="font-weight:700;margin:0 2px 8px">POR ETIQUETA (todos sus exámenes)</div>' + tablaEtiquetas(tags);
+  return h;
+}
+function repEtiqueta() {
+  const exs = S.data.examenes.slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
+  let h = '<div class="toolbar">' + selectHtml('repEtqExamen', exs.map(e => [e.id, e.nombre + ' · ' + fmtFecha(e.fecha)]), S.rep.etqExamen, '<option value="*"' + (S.rep.etqExamen === '*' ? ' selected' : '') + '>Todos los exámenes</option>') + '</div>';
+  const evs = S.data.evaluaciones.filter(v => S.rep.etqExamen === '*' || v.examenId === S.rep.etqExamen).map(v => ({ notas: v.notas, codigos: (examen(v.examenId) || { codigos: [] }).codigos }));
+  if (!evs.length) return h + '<div class="card empty">Sin evaluaciones para analizar.</div>';
+  return h + tablaEtiquetas(agruparEtiquetas(evs)) + '<p class="small muted">Ordenado de menor a mayor % de correctas: arriba, lo que más cuesta.</p>';
+}
+function agruparEtiquetas(lista) {
+  const t = {};
+  lista.forEach(x => x.codigos.forEach(c => {
+    const n = x.notas[c]; if (!n) return;
+    const a = actividad(c); const etqs = a && a.etiquetas.length ? a.etiquetas : ['(sin etiqueta)'];
+    etqs.forEach(e => { const k = t[e] = t[e] || { C: 0, I: 0, N: 0, total: 0, acts: new Set() }; k[n]++; k.total++; k.acts.add(c); });
+  }));
+  return Object.keys(t).map(e => Object.assign({ etiqueta: e, p: pct(t[e].C, t[e].total) }, t[e])).sort((a, b) => a.p - b.p || a.etiqueta.localeCompare(b.etiqueta));
+}
+function stackBar(k) { return '<div class="stack"><span class="c" style="width:' + pct(k.C, k.total) + '%"></span><span class="i" style="width:' + pct(k.I, k.total) + '%"></span><span class="n" style="width:' + pct(k.N, k.total) + '%"></span></div>'; }
+function tablaEtiquetas(tags) {
+  if (!tags.length) return '<div class="card empty">Sin datos.</div>';
+  return '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Etiqueta</th><th class="ctr">Actividades</th><th class="ctr">Respuestas</th><th style="min-width:180px">✓ / ✗ / –</th><th class="ctr">% ✓</th></tr></thead><tbody>' +
+    tags.map(t => '<tr><td><span class="chip acc">' + esc(t.etiqueta) + '</span></td><td class="ctr">' + t.acts.size + '</td><td class="ctr">' + t.total + '</td><td>' + stackBar(t) + '</td><td class="ctr"><b class="' + pctCls(t.p) + '">' + t.p + '%</b></td></tr>').join('') +
+    '</tbody></table></div>';
+}
+
+/* =====================================================================
+   Eventos (delegación)
+   ===================================================================== */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act, w = S.wiz, f = S.form;
+  switch (act) {
+    case 'nav': closeModal(); go(b.dataset.v); break;
+    case 'wzExamen': w.examenId = b.dataset.id; w.step = 2; w.tab = 'pend'; w.q = ''; render(); window.scrollTo(0, 0); break;
+    case 'wzTab': w.tab = b.dataset.v; render(); break;
+    case 'wzAlumno': {
+      w.alumnoId = b.dataset.id;
+      const ev = evalDe(w.examenId, w.alumnoId);
+      w.editando = !!ev; w.notas = ev ? Object.assign({}, ev.notas) : {};
+      w.step = 3; render(); window.scrollTo(0, 0); break;
+    }
+    case 'wzBack': w.step = Math.max(1, w.step - 1); if (w.step < 3) { w.notas = {}; w.editando = false; } render(); window.scrollTo(0, 0); break;
+    case 'grade': wzGrade(b); break;
+    case 'wzRevisar': wzRevisar(); break;
+    case 'wzConfirmar': wzConfirmar(); break;
+    case 'closeModal': closeModal(); break;
+    case 'verInactivos': S.verInactivos = b.checked; render(); break;
+    case 'nuevoExamen': abrirFormExamen(null); break;
+    case 'editExamen': abrirFormExamen(b.dataset.id); break;
+    case 'dupExamen': abrirFormExamen(b.dataset.id, true); break;
+    case 'toggleExamen': toggleEstado('examen', b.dataset.id, b); break;
+    case 'fTag': f.tag = b.dataset.v; renderFormExamen(); break;
+    case 'fAdd': f.codigos.push(b.dataset.c); f.err = ''; renderFormExamen(); break;
+    case 'fDel': f.codigos.splice(+b.dataset.i, 1); renderFormExamen(); break;
+    case 'fUp': { const i = +b.dataset.i; [f.codigos[i - 1], f.codigos[i]] = [f.codigos[i], f.codigos[i - 1]]; renderFormExamen(); break; }
+    case 'fDown': { const i = +b.dataset.i; [f.codigos[i + 1], f.codigos[i]] = [f.codigos[i], f.codigos[i + 1]]; renderFormExamen(); break; }
+    case 'saveExamen': saveExamen(b); break;
+    case 'nuevoAlumno': abrirFormAlumno(null); break;
+    case 'editAlumno': abrirFormAlumno(b.dataset.id); break;
+    case 'toggleAlumno': toggleEstado('alumno', b.dataset.id, b); break;
+    case 'nuevaActividad': abrirFormActividad(null); break;
+    case 'editActividad': abrirFormActividad(b.dataset.c); break;
+    case 'toggleActividad': toggleEstado('actividad', b.dataset.c, b); break;
+    case 'addTag': { const el = $('#acE'); const cur = el.value.split(',').map(x => x.trim()).filter(Boolean); if (!cur.includes(b.dataset.v)) cur.push(b.dataset.v); el.value = cur.join(', '); break; }
+    case 'repTab': S.rep.tab = b.dataset.v; render(); break;
+  }
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.inp) {
+    const k = el.dataset.inp;
+    if (k === 'wzQ') S.wiz.q = el.value; else S[k] = el.value;
+    const pos = el.selectionStart; render();
+    const n = document.querySelector('[data-inp="' + k + '"]'); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
+  } else if (el.dataset.fi && S.form) {
+    S.form[el.dataset.fi] = el.value;
+    if (el.dataset.fi === 'q') renderFormExamen();
+  }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.sel === 'repExamen') S.rep.examenId = el.value;
+  else if (el.dataset.sel === 'repAlumno') S.rep.alumnoId = el.value;
+  else if (el.dataset.sel === 'repEtqExamen') S.rep.etqExamen = el.value;
+  else return;
+  render();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalBg')) closeModal(); });
+
+/* =====================================================================
+   PWA: instalación estándar + service worker
+   ===================================================================== */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; $('#btnInstall').classList.remove('hidden'); });
+window.addEventListener('appinstalled', () => { $('#btnInstall').classList.add('hidden'); deferredPrompt = null; });
+$('#btnInstall').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; $('#btnInstall').classList.add('hidden');
+});
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+
+/* =====================================================================
+   MODO DEMO — backend simulado con los mismos datos de prueba que el GAS
+   ===================================================================== */
+const MOCK = (() => {
+  const DEMO_DATA = {
+    alumnos: [['Sofía', 'Álvarez'], ['Mateo', 'Benítez'], ['Valentina', 'Castro'], ['Benjamín', 'Díaz'], ['Emma', 'Fernández'], ['Joaquín', 'Gómez'], ['Martina', 'López'], ['Thiago', 'Martínez'], ['Catalina', 'Pérez'], ['Lautaro', 'Romero']],
+    actividades: [['SUM01', 'Suma de dos cifras sin dificultad', 'cálculo, suma'], ['SUM02', 'Suma con dificultad (llevando)', 'cálculo, suma'], ['RES01', 'Resta de dos cifras sin dificultad', 'cálculo, resta'], ['RES02', 'Resta con dificultad (pidiendo)', 'cálculo, resta'], ['PRB01', 'Problema de una operación', 'problemas, comprensión'], ['PRB02', 'Problema de dos operaciones', 'problemas, comprensión'], ['NUM01', 'Escritura de números hasta 1000', 'numeración'], ['NUM02', 'Anterior y posterior', 'numeración'], ['GEO01', 'Reconocer figuras geométricas', 'geometría'], ['MED01', 'Lectura de la hora', 'medida'], ['LEC01', 'Comprensión de texto breve', 'lectura, comprensión'], ['LEC02', 'Idea principal del texto', 'lectura, comprensión'], ['ESC01', 'Ortografía: uso de mayúsculas', 'escritura, ortografía'], ['ESC02', 'Producción de oración completa', 'escritura']],
+    examenes: [['Matemática 1 – 3°A – 2026 – Esc. N°5', '2026-09-15', ['NUM01', 'NUM02', 'SUM01', 'SUM02', 'RES01', 'RES02', 'PRB01', 'PRB02', 'GEO01', 'MED01']], ['Lengua 1 – 3°A – 2026 – Esc. N°5', '2026-09-22', ['LEC01', 'LEC02', 'ESC01', 'ESC02', 'PRB01', 'NUM01', 'SUM01', 'RES01', 'GEO01', 'MED01', 'NUM02']]],
+    evaluaciones: ['CCCCCICICC', 'CCCICIIICC', 'CCCCCCCCCC', 'CCNICINNCI', 'CCCCCICCCC', 'CICIIIIICN']
+  };
+  const pad = (n, d) => String(n).padStart(d, '0');
+  const db = {
+    alumnos: DEMO_DATA.alumnos.map((a, i) => ({ id: 'A' + pad(i + 1, 4), nombre: a[0], apellido: a[1], activo: true })),
+    actividades: DEMO_DATA.actividades.map(a => ({ codigo: a[0], descripcion: a[1], etiquetas: a[2].split(',').map(x => x.trim()), activo: true })),
+    examenes: DEMO_DATA.examenes.map((e, i) => ({ id: 'E' + pad(i + 1, 4), nombre: e[0], fecha: e[1], activo: true, codigos: e[2] })),
+    evaluaciones: []
+  };
+  DEMO_DATA.evaluaciones.forEach((s, i) => {
+    const notas = {}; db.examenes[0].codigos.forEach((c, j) => notas[c] = s[j]);
+    db.evaluaciones.push({ id: 'V' + pad(i + 1, 5), examenId: 'E0001', alumnoId: 'A' + pad(i + 1, 4), fechaCarga: new Date().toISOString(), fechaEdicion: '', notas });
+  });
+  const nextId = (arr, p, d) => p + pad(arr.reduce((m, x) => Math.max(m, +(x.id.match(/\d+$/) || [0])[0]), 0) + 1, d);
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const tags = e => [...new Set(String(e || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean))];
+  const H = {
+    solicitarPIN: p => /.+@.+/.test(p.email || '') ? { ok: true } : { ok: false, motivo: 'no_encontrado' },
+    validarPIN: p => p.pin === '123456' ? { ok: true, token: 'demo-token', expira: new Date(Date.now() + 7 * 864e5).toISOString() } : { ok: false, motivo: 'pin_incorrecto', restantes: 2 },
+    validarSesion: p => p.token === 'demo-token' ? { ok: true } : { ok: false, motivo: 'token_invalido' },
+    getData: () => Object.assign({ ok: true }, clone(db)),
+    guardarAlumno: d => {
+      if (!String(d.nombre || '').trim() || !String(d.apellido || '').trim()) return { ok: false, error: 'Nombre y apellido son obligatorios.' };
+      let a = d.id && db.alumnos.find(x => x.id === d.id);
+      if (a) { a.nombre = d.nombre.trim(); a.apellido = d.apellido.trim(); }
+      else { a = { id: nextId(db.alumnos, 'A', 4), nombre: d.nombre.trim(), apellido: d.apellido.trim(), activo: true }; db.alumnos.push(a); }
+      return { ok: true, alumno: clone(a) };
+    },
+    guardarActividad: d => {
+      const c = String(d.codigo || '').trim().toUpperCase();
+      if (!/^[A-Z0-9][A-Z0-9_.\-]{0,19}$/.test(c)) return { ok: false, error: 'Código inválido: usá letras, números, guion o punto (máx. 20).' };
+      if (!String(d.descripcion || '').trim()) return { ok: false, error: 'La descripción es obligatoria.' };
+      let a = db.actividades.find(x => x.codigo === c);
+      if (d.nuevo) { if (a) return { ok: false, error: 'Ya existe una actividad con el código ' + c }; a = { codigo: c, activo: true }; db.actividades.push(a); }
+      else if (!a) return { ok: false, error: 'No existe la actividad ' + c };
+      a.descripcion = d.descripcion.trim(); a.etiquetas = tags(d.etiquetas);
+      return { ok: true, actividad: clone(a) };
+    },
+    guardarExamen: d => {
+      if (!String(d.nombre || '').trim()) return { ok: false, error: 'El nombre del examen es obligatorio.' };
+      if (!(d.codigos || []).length) return { ok: false, error: 'El examen necesita al menos una actividad.' };
+      let e = d.id && db.examenes.find(x => x.id === d.id);
+      if (e) {
+        if (e.codigos.join('|') !== d.codigos.join('|') && db.evaluaciones.some(v => v.examenId === e.id)) return { ok: false, error: 'Las actividades de este examen están bloqueadas: ya hay alumnos evaluados.' };
+        Object.assign(e, { nombre: d.nombre.trim(), fecha: d.fecha, codigos: d.codigos.slice() });
+      } else { e = { id: nextId(db.examenes, 'E', 4), nombre: d.nombre.trim(), fecha: d.fecha, activo: true, codigos: d.codigos.slice() }; db.examenes.push(e); }
+      return { ok: true, examen: clone(e) };
+    },
+    guardarEvaluacion: d => {
+      const e = db.examenes.find(x => x.id === d.examenId);
+      if (!e) return { ok: false, error: 'No existe el examen' };
+      const falta = e.codigos.filter(c => !'CIN'.includes(d.notas[c] || 'X'));
+      if (falta.length) return { ok: false, error: 'Faltan calificar: ' + falta.join(', ') };
+      let v = db.evaluaciones.find(x => x.examenId === d.examenId && x.alumnoId === d.alumnoId);
+      if (v) { v.notas = clone(d.notas); v.fechaEdicion = new Date().toISOString(); return { ok: true, nuevo: false, evalId: v.id }; }
+      v = { id: nextId(db.evaluaciones, 'V', 5), examenId: d.examenId, alumnoId: d.alumnoId, fechaCarga: new Date().toISOString(), fechaEdicion: '', notas: clone(d.notas) };
+      db.evaluaciones.push(v); return { ok: true, nuevo: true, evalId: v.id };
+    }
+  };
+  ['Alumno', 'Actividad', 'Examen'].forEach(t => {
+    H['estado' + t] = d => {
+      const arr = { Alumno: db.alumnos, Actividad: db.actividades, Examen: db.examenes }[t];
+      const o = arr.find(x => (x.id || x.codigo) === (d.id || d.codigo));
+      if (!o) return { ok: false, error: 'No existe' };
+      o.activo = d.activo === true; return { ok: true };
+    };
+  });
+  return {
+    call(action, p) {
+      return new Promise(res => setTimeout(() => {
+        const h = H[action];
+        if (!h) return res({ ok: false, error: 'Acción desconocida: ' + action });
+        if (!['solicitarPIN', 'validarPIN', 'validarSesion'].includes(action) && p.token !== 'demo-token') return res({ ok: false, motivo: 'sesion_invalida' });
+        res(h(action.startsWith('validar') || action === 'solicitarPIN' ? p : (p.data || {})));
+      }, 220));
+    }
+  };
+})();
+
+/* =====================================================================
+   Inicio
+   ===================================================================== */
+(function init() {
+  document.title = CONFIG.APP_NAME;
+  $('#brandIcon').innerHTML = ICONS.logo;
+  $('#brandName').textContent = CONFIG.APP_NAME;
+  $('#brandVer').textContent = 'v' + CONFIG.APP_VERSION;
+  $('#btnLogout').innerHTML = ic('logout');
+  $('#btnLogout').onclick = () => { if (!queue.length || confirm('Hay evaluaciones sin guardar todavía. ¿Cerrar sesión igual?')) logout(); };
+  $('#btnTheme').onclick = toggleTheme;
+  if (DEMO) $('#demoBar').classList.remove('hidden');
+  boot();
+})();
+</script>
+</body>
+</html>
