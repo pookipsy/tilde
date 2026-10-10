@@ -6,11 +6,16 @@
 <title>Tilde</title>
 <meta name="description" content="Tilde — registro de evaluaciones por examen">
 <meta name="theme-color" content="#26262a">
-<!-- Tilde v1.0.0 -->
+<!-- Tilde v1.0.1 -->
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tilde">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
@@ -248,13 +253,14 @@ table.tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:.88rem}
 <script>
 'use strict';
 /* =====================================================================
-   Tilde — PWA de evaluaciones por examen · v1.0.0 · 10-oct-2026
-   Backend: Tilde_v1.0.0.gs (GAS Web App). Sin GAS_URL → modo demo.
+   Tilde — PWA de evaluaciones por examen · v1.0.1 · 10-oct-2026
+   Backend: Tilde_v1.0.1.gs (GAS Web App). Modo demo: agregar ?demo=1 a la URL.
+   v1.0.1: URL del GAS de producción, ícono nuevo (T con tilde), instalación reforzada.
    ===================================================================== */
 const CONFIG = {
   APP_NAME: 'Tilde',                 // parametrizable
-  APP_VERSION: '1.0.0',
-  GAS_URL: '',                       // URL /exec del Web App de Tilde
+  APP_VERSION: '1.0.1',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwMmuk3pE8YAcvoV4uIKQiSeG-gjsNyr3nUV3LB0aDj4MwZcUHkKR5hzr6ZICoLoFr9/exec',
   LS: 'tilde_',
   TIMEOUT_MS: 30000,
   RETRY_MS: 15000,
@@ -269,7 +275,7 @@ const ESTADOS = {
 
 /* ---------------- Íconos ---------------- */
 const ICONS = {
-  logo: '<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#26262a"/><path d="M17 33.5l10 10L47 21" fill="none" stroke="#b49ef0" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  logo: '<svg viewBox="0 0 512 512"><rect width="512" height="512" rx="120" fill="#26262a"/><path d="M262 156 L322 92" stroke="#b49ef0" stroke-width="46" stroke-linecap="round" fill="none"/><rect x="132" y="198" width="248" height="62" rx="16" fill="#f4eee4"/><rect x="225" y="198" width="62" height="226" rx="16" fill="#f4eee4"/></svg>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   minus: '<path d="M6 12h12"/>',
@@ -991,7 +997,9 @@ $('#btnInstall').addEventListener('click', async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; $('#btnInstall').classList.add('hidden');
 });
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 
 /* =====================================================================
    MODO DEMO — backend simulado con los mismos datos de prueba que el GAS
