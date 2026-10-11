@@ -6,7 +6,7 @@
 <title>Tilde</title>
 <meta name="description" content="Tilde — registro de evaluaciones por examen">
 <meta name="theme-color" content="#26262a">
-<!-- Tilde v1.0.1 -->
+<!-- Tilde v1.1.0 -->
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
@@ -51,10 +51,20 @@ button{cursor:pointer}
 .brand svg{width:26px;height:26px}
 .brand .ver{font-family:var(--font);font-size:.7rem;letter-spacing:0;opacity:.6;margin-left:2px}
 .hdr .sp{flex:1}
-.sync{display:flex;align-items:center;gap:6px;font-size:.8rem;opacity:.9}
-.sync .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.sync{display:flex;align-items:center;gap:7px;font-size:.8rem;font-weight:600;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:inherit;border-radius:999px;padding:5px 11px 5px 9px;max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync:hover{background:rgba(255,255,255,.13)}
+.sync .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px rgba(255,255,255,.08)}
 .sync.saving .dot{background:#f5b301;animation:pulse 1s infinite}
-.sync.pending .dot{background:var(--bad)}
+.sync.pending .dot{background:#f05252}
+.sync.off .dot{background:#9a9aa2}
+.dotg2{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:-1px;background:var(--ok)}
+.dotg2.saving{background:#f5b301}.dotg2.pending{background:var(--bad)}.dotg2.off{background:var(--nr)}
+.kv{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--border);font-size:.9rem}
+.kv:first-child{border-top:0}
+.kv>span{color:var(--muted)}
+.kv>b{font-weight:600;text-align:right}
+.kv.col{flex-direction:column;align-items:flex-start;gap:3px}
+.kv.col>b{text-align:left}
 @keyframes pulse{50%{opacity:.3}}
 .icon-btn{background:transparent;border:0;color:inherit;width:38px;height:38px;border-radius:10px;display:grid;place-items:center}
 .icon-btn:hover{background:rgba(255,255,255,.1)}
@@ -81,7 +91,13 @@ main{flex:1;min-width:0;padding:16px;padding-bottom:calc(var(--nav-h) + 24px + e
   .nav button:hover{background:var(--surface-2)}
   .nav button.on{background:var(--accent-soft)}
   main{padding:24px 28px 40px}
+  .nav{transition:width .15s}
+  .nav-toggle{margin-top:auto}
+  body.nav-col .nav{width:68px;padding:18px 8px}
+  body.nav-col .nav button{justify-content:center;padding:11px 0}
+  body.nav-col .nav button span{display:none}
 }
+@media (max-width:899px){.nav-toggle{display:none!important}}
 
 /* ===================== Componentes ===================== */
 h1.title{font-family:var(--display);font-weight:400;font-size:2rem;letter-spacing:.04em;margin:4px 0 2px}
@@ -190,7 +206,7 @@ table.tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:.88rem}
 .pct-lo{color:var(--bad)} .pct-mid{color:#c27c00} .pct-hi{color:var(--ok)}
 :root[data-theme="dark"] .pct-mid{color:#f5b301}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin:10px 2px}
-.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend>span{display:inline-flex;align-items:center;gap:6px}
 
 /* ===================== Modal / toast / pantallas ===================== */
 .modal-bg{position:fixed;inset:0;background:rgba(10,10,12,.55);z-index:60;display:flex;align-items:flex-end;justify-content:center}
@@ -235,12 +251,12 @@ table.tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:.88rem}
   <header class="hdr">
     <div class="brand"><span id="brandIcon"></span><span id="brandName">Tilde</span><span class="ver" id="brandVer"></span></div>
     <div class="sp"></div>
-    <div class="sync" id="sync" title="Estado de guardado"><span class="dot"></span><span id="syncTxt">Guardado</span></div>
+    <button class="sync ok" id="sync" title="Sincronización"><span class="dot"></span><span id="syncTxt">…</span></button>
     <button class="btn-install hidden" id="btnInstall">Instalar</button>
     <button class="icon-btn" id="btnTheme" title="Modo claro / oscuro" aria-label="Cambiar tema"></button>
     <button class="icon-btn" id="btnLogout" title="Cerrar sesión" aria-label="Cerrar sesión"></button>
   </header>
-  <div class="demo-bar hidden" id="demoBar">Modo demo — datos de prueba en memoria (no se guarda nada)</div>
+  <div class="demo-bar hidden" id="demoBar">Modo demo — datos de prueba guardados solo en este navegador (no toca el Sheet)</div>
   <div class="layout">
     <nav class="nav" id="nav"></nav>
     <main id="main"></main>
@@ -253,13 +269,15 @@ table.tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:.88rem}
 <script>
 'use strict';
 /* =====================================================================
-   Tilde — PWA de evaluaciones por examen · v1.0.1 · 10-oct-2026
-   Backend: Tilde_v1.0.1.gs (GAS Web App). Modo demo: agregar ?demo=1 a la URL.
-   v1.0.1: URL del GAS de producción, ícono nuevo (T con tilde), instalación reforzada.
+   Tilde — PWA de evaluaciones por examen · v1.1.0 · 11-oct-2026
+   Backend: Tilde_v1.1.0.gs (GAS Web App). Modo demo: agregar ?demo=1 a la URL.
+   v1.1.0: local-first (copia en el dispositivo + cola de cambios con reintento), GET para leer,
+           sesión sin vencimiento revocable, círculo de 4 estados + panel de sincronización,
+           IDs invisibles, menú lateral colapsable, fix de íconos de la leyenda.
    ===================================================================== */
 const CONFIG = {
   APP_NAME: 'Tilde',                 // parametrizable
-  APP_VERSION: '1.0.1',
+  APP_VERSION: '1.1.0',
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwMmuk3pE8YAcvoV4uIKQiSeG-gjsNyr3nUV3LB0aDj4MwZcUHkKR5hzr6ZICoLoFr9/exec',
   LS: 'tilde_',
   TIMEOUT_MS: 30000,
@@ -294,7 +312,10 @@ const ICONS = {
   up: '<path d="M6 15l6-6 6 6"/>',
   down: '<path d="M6 9l6 6 6-6"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/>',
-  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>'
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>',
+  colL: '<path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>',
+  colR: '<path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>',
+  sync: '<path d="M20 11a8 8 0 00-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0014.5 4.5L20 16M20 20v-4h-4"/>'
 };
 function ic(n) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + ICONS[n] + '</svg>'; }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -334,50 +355,72 @@ function openModal(html, wide) {
   $('#modalRoot').innerHTML = '<div class="modal-bg" id="modalBg"><div class="modal' + (wide ? ' wide' : '') + '" role="dialog">' + html + '</div></div>';
   $('#modalBg').addEventListener('click', e => { if (e.target.id === 'modalBg') closeModal(); });
 }
-function closeModal() { $('#modalRoot').innerHTML = ''; S.form = null; }
+function closeModal() { $('#modalRoot').innerHTML = ''; S.form = null; S.panelSync = false; }
 function setBusy(btn, on) { if (btn) { btn.classList.toggle('busy', on); btn.disabled = on; } }
 
 /* =====================================================================
-   API
+   API — GET para leer, POST solo para validarPIN y el lote de cambios.
+   Lecciones de PreKOM: GET falla menos en el salto exec→googleusercontent (v8.3.0)
+   y no hay corte propio de tiempo (v7.1.6). El 404 intermitente se trata como
+   "sin conexión": el cambio queda en la cola y se reintenta solo.
    ===================================================================== */
-function getSession() { return store.get('session', null); }
+const LSP = DEMO ? 'demo_' : '';                 // el modo demo usa sus propias claves locales
+const RETRY_MS = [3000, 8000, 20000, 30000];     // espera entre reintentos tras una falla
+function getSession() { return store.get(LSP + 'session', null); }
 function netError(msg) { const e = new Error(msg || 'Sin conexión'); e.network = true; return e; }
+const pad2 = n => String(n).padStart(2, '0');
+const hhmm = iso => { const d = new Date(iso); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
+const fechaHora = iso => { const d = new Date(iso); return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + ' ' + hhmm(iso); };
+function uid(prefijo) {
+  const r = (window.crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, '') : (Date.now().toString(16) + Math.random().toString(16).slice(2));
+  return prefijo + '-' + r.slice(0, 12);
+}
 
-async function apiRaw(action, payload) {
-  if (DEMO) return MOCK.call(action, payload);
-  const ctrl = new AbortController();
-  const tmr = setTimeout(() => ctrl.abort(), CONFIG.TIMEOUT_MS);
+async function http(method, params) {
+  if (navigator.onLine === false) throw netError('Sin red');
+  if (DEMO) return MOCK.call(method, params);
   let res;
   try {
-    res = await fetch(CONFIG.GAS_URL, {
-      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(Object.assign({ action }, payload)), signal: ctrl.signal, redirect: 'follow'
-    });
-  } catch (e) { throw netError(); } finally { clearTimeout(tmr); }
-  if (!res.ok) throw netError('Error HTTP ' + res.status);
-  try { return await res.json(); } catch (e) { throw netError('Respuesta inválida del servidor'); }
+    if (method === 'GET') {
+      const qs = Object.keys(params).filter(k => params[k] != null && params[k] !== '')
+        .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('&');
+      res = await fetch(CONFIG.GAS_URL + '?' + qs + '&_=' + Date.now(), { method: 'GET', redirect: 'follow', cache: 'no-store' });
+    } else {
+      res = await fetch(CONFIG.GAS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(params), redirect: 'follow'
+      });
+    }
+  } catch (e) { throw netError(); }
+  if (!res.ok) throw netError('HTTP ' + res.status);              // el 404 intermitente de Apps Script cae acá
+  const txt = await res.text();
+  try { return JSON.parse(txt); } catch (e) { throw netError('Respuesta no válida del servidor'); }
 }
-
-async function api(action, data) {
-  const ses = getSession() || {};
-  const r = await apiRaw(action, { email: ses.email, token: ses.token, data });
-  if (r && r.motivo === 'sesion_invalida') { logout('Tu sesión venció. Ingresá de nuevo.'); throw new Error('sesion'); }
-  return r;
-}
+const esRevocada = r => r && r.motivo === 'sesion_invalida';
 
 /* =====================================================================
-   Estado
+   Estado + copia local (local-first, patrón RegMed)
    ===================================================================== */
+const vacio = () => ({ alumnos: [], actividades: [], examenes: [], evaluaciones: [] });
 const S = {
-  data: { alumnos: [], actividades: [], examenes: [], evaluaciones: [] },
+  data: store.get(LSP + 'data', null) || vacio(),
   view: 'cargar',
   wiz: { step: 1, examenId: null, tab: 'pend', q: '', alumnoId: null, notas: {}, editando: false },
   exq: '', alq: '', acq: '', verInactivos: false,
   rep: { tab: 'examen', examenId: null, alumnoId: null, etqExamen: '*' },
-  form: null
+  form: null, panelSync: false
 };
-let queue = store.get('queue', []);
-let flushing = false, retryTimer = null;
+// cola de cambios: [{ opId, tipo, op, data, mod, desc }]
+let queue = store.get(LSP + 'queue', []).map(j => j.opId ? j : {   // cola de v1.0.x (solo evaluaciones) → formato nuevo
+  opId: uid('op'), tipo: 'evaluacion', op: 'upsert', data: j.data, mod: new Date(j.t || Date.now()).toISOString(), desc: 'Evaluación pendiente (v1.0)'
+});
+let syncErrors = store.get(LSP + 'syncErrors', []);
+let lastSync = store.get(LSP + 'lastSync', null);
+const SY = { flushing: false, pulling: false, inflight: 0, fallas: 0, lastError: '', timer: null, flushSeq: 0 };
+
+function persist() {
+  store.set(LSP + 'data', S.data); store.set(LSP + 'queue', queue);
+  store.set(LSP + 'syncErrors', syncErrors); store.set(LSP + 'lastSync', lastSync);
+}
 
 const byApellido = (a, b) => (a.apellido + ' ' + a.nombre).localeCompare(b.apellido + ' ' + b.nombre, 'es');
 const alumno = id => S.data.alumnos.find(a => a.id === id);
@@ -393,60 +436,172 @@ function conteo(notas, codigos) {
   (codigos || Object.keys(notas)).forEach(c => { const v = notas[c]; if (r[v] != null) { r[v]++; r.total++; } });
   return r;
 }
+const normTags = s => [...new Set(String(s || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean))];
 
-async function loadData() {
-  const r = await api('getData');
-  if (!r.ok) throw new Error(r.error || 'No se pudieron leer los datos');
-  S.data = { alumnos: r.alumnos, actividades: r.actividades, examenes: r.examenes, evaluaciones: r.evaluaciones };
-  queue.forEach(j => aplicarEvalLocal(j.data));   // lo que quedó sin subir sigue visible
+/* ---------------- Aplicar un cambio a los datos locales ---------------- */
+function applyOp(D, o) {
+  const d = o.data;
+  if (o.tipo === 'alumno') {
+    const a = D.alumnos.find(x => x.id === d.id);
+    if (o.op === 'estado') { if (a) a.activo = d.activo; return; }
+    if (a) { a.nombre = d.nombre; a.apellido = d.apellido; }
+    else D.alumnos.push({ id: d.id, nombre: d.nombre, apellido: d.apellido, activo: true });
+  } else if (o.tipo === 'actividad') {
+    const a = D.actividades.find(x => x.codigo === d.codigo);
+    if (o.op === 'estado') { if (a) a.activo = d.activo; return; }
+    if (a) { a.descripcion = d.descripcion; a.etiquetas = d.etiquetas.slice(); }
+    else D.actividades.push({ codigo: d.codigo, descripcion: d.descripcion, etiquetas: d.etiquetas.slice(), activo: true });
+  } else if (o.tipo === 'examen') {
+    const e = D.examenes.find(x => x.id === d.id);
+    if (o.op === 'estado') { if (e) e.activo = d.activo; return; }
+    if (e) {
+      e.nombre = d.nombre; e.fecha = d.fecha;
+      if (!D.evaluaciones.some(v => v.examenId === d.id)) e.codigos = d.codigos.slice();   // misma regla de bloqueo que el GAS
+    } else D.examenes.push({ id: d.id, nombre: d.nombre, fecha: d.fecha, activo: true, codigos: d.codigos.slice() });
+  } else if (o.tipo === 'evaluacion') {
+    const v = D.evaluaciones.find(x => x.examenId === d.examenId && x.alumnoId === d.alumnoId);
+    if (v) { v.notas = Object.assign({}, d.notas); v.fechaEdicion = o.mod; }
+    else D.evaluaciones.push({ id: '', examenId: d.examenId, alumnoId: d.alumnoId, fechaCarga: o.mod, fechaEdicion: '', notas: Object.assign({}, d.notas) });
+  }
 }
 
-/* ---------------- Cola de guardado (evaluaciones) ---------------- */
-function aplicarEvalLocal(d) {
-  const ex = evalDe(d.examenId, d.alumnoId);
-  if (ex) { ex.notas = Object.assign({}, d.notas); ex.fechaEdicion = new Date().toISOString(); }
-  else S.data.evaluaciones.push({ id: '', examenId: d.examenId, alumnoId: d.alumnoId, fechaCarga: new Date().toISOString(), fechaEdicion: '', notas: Object.assign({}, d.notas) });
+/* ---------------- Cola: todo cambio se ve al instante y se sube después ---------------- */
+const opKey = o => o.tipo + '|' + o.op + '|' + (o.tipo === 'evaluacion' ? o.data.examenId + '/' + o.data.alumnoId : (o.data.id || o.data.codigo));
+function encolar(tipo, op, data, desc) {
+  const o = { opId: uid('op'), tipo, op, data, mod: new Date().toISOString(), desc };
+  applyOp(S.data, o);
+  const k = opKey(o);
+  const i = queue.findIndex((x, j) => j >= SY.inflight && opKey(x) === k);   // mismo cambio aún sin enviar → se reemplaza
+  if (i >= 0) queue[i] = o; else queue.push(o);
+  persist(); render(); updSync();
+  scheduleFlush(300);
 }
 function encolarEval(d) {
-  aplicarEvalLocal(d);
-  queue = queue.filter(j => !(j.data.examenId === d.examenId && j.data.alumnoId === d.alumnoId));
-  queue.push({ data: d, t: Date.now() });
-  store.set('queue', queue);
-  flushQueue();
+  const al = alumno(d.alumnoId), ex = examen(d.examenId);
+  encolar('evaluacion', 'upsert', d, 'Evaluación: ' + al.apellido + ', ' + al.nombre + ' – ' + ex.nombre);
 }
-function setSync(st) {
-  const el = $('#sync'); if (!el) return;
-  el.className = 'sync ' + st;
-  $('#syncTxt').textContent = st === 'saving' ? 'Guardando…' : st === 'pending' ? queue.length + ' sin guardar' : 'Guardado';
-}
-async function flushQueue() {
-  if (flushing) return;
-  flushing = true;
-  clearTimeout(retryTimer);
+function scheduleFlush(ms) { clearTimeout(SY.timer); SY.timer = setTimeout(flush, ms); }
+
+async function flush() {
+  const ses = getSession();
+  if (SY.flushing || !queue.length || !ses) { updSync(); return; }
+  SY.flushing = true; SY.inflight = queue.length; updSync();
+  const ops = queue.slice(0, SY.inflight).map(o => ({ opId: o.opId, tipo: o.tipo, op: o.op, data: o.data, mod: o.mod }));
+  let ok = false, rechazos = 0;
   try {
-    while (queue.length) {
-      const job = queue[0];
-      setSync('saving');
-      let r;
-      try { r = await api('guardarEvaluacion', job.data); }
-      catch (e) { if (e.message === 'sesion') return; setSync('pending'); retryTimer = setTimeout(flushQueue, CONFIG.RETRY_MS); return; }
-      queue.shift(); store.set('queue', queue);
-      if (!r.ok) {
-        const al = alumno(job.data.alumnoId);
-        toast('No se guardó ' + (al ? al.apellido : '') + ': ' + (r.error || 'error'), 'error');
-        try { await loadData(); render(); } catch (e) {}
-      } else {
-        const v = evalDe(job.data.examenId, job.data.alumnoId); if (v && r.evalId) v.id = r.evalId;
-      }
-    }
-    setSync('ok');
-  } finally { flushing = false; }
+    const r = await http('POST', { action: 'batch', email: ses.email, token: ses.token, ops });
+    if (esRevocada(r)) { SY.flushing = false; SY.inflight = 0; revocar(); return; }
+    if (!r.ok) throw netError(r.error || 'Error del servidor');
+    const enviados = queue.splice(0, ops.length);
+    (r.resultados || []).forEach(x => {
+      if (x.ok) return;
+      const o = enviados.find(e => e.opId === x.opId);
+      syncErrors.unshift({ t: new Date().toISOString(), desc: o ? o.desc : x.opId, error: x.error || 'Rechazado' });
+      rechazos++;
+    });
+    syncErrors = syncErrors.slice(0, 30);
+    SY.fallas = 0; SY.lastError = ''; SY.flushSeq++; lastSync = new Date().toISOString(); ok = true;
+  } catch (e) {
+    SY.fallas++; SY.lastError = e.message || 'Sin conexión';
+  } finally {
+    SY.flushing = false; SY.inflight = 0; persist(); updSync();
+  }
+  if (ok) {
+    if (rechazos) { toast(rechazos + ' cambio(s) rechazado(s) por el servidor. Tocá el indicador de sincronización para ver el detalle.', 'error'); pull(); }
+    if (queue.length) scheduleFlush(500);
+  } else scheduleFlush(RETRY_MS[Math.min(SY.fallas - 1, RETRY_MS.length - 1)]);
 }
-window.addEventListener('online', () => flushQueue());
-window.addEventListener('beforeunload', e => { if (queue.length) { e.preventDefault(); e.returnValue = ''; } });
+
+async function pull(manual) {
+  const ses = getSession();
+  if (!ses || SY.pulling) return false;
+  SY.pulling = true; updSync();
+  const seq = SY.flushSeq;
+  let ok = false;
+  try {
+    const r = await http('GET', { action: 'sync', email: ses.email, token: ses.token });
+    if (esRevocada(r)) { SY.pulling = false; revocar(); return false; }
+    if (!r.ok) throw netError(r.error || 'Error del servidor');
+    const D = { alumnos: r.alumnos || [], actividades: r.actividades || [], examenes: r.examenes || [], evaluaciones: r.evaluaciones || [] };
+    queue.forEach(o => applyOp(D, o));               // lo pendiente del dispositivo manda sobre lo del Sheet
+    S.data = D; lastSync = new Date().toISOString(); SY.lastError = ''; SY.fallas = 0;
+    persist(); ok = true;
+    if (appVisible()) renderSafe();
+  } catch (e) {
+    SY.lastError = e.message || 'Sin conexión';
+    if (manual) toast('No se pudo actualizar: ' + SY.lastError, 'error');
+  } finally { SY.pulling = false; updSync(); }
+  if (ok && seq !== SY.flushSeq) setTimeout(() => pull(), 400);   // se subió un lote mientras leía → releer
+  return ok;
+}
+
+/* ---------------- Indicador (círculo de 4 estados) + panel ---------------- */
+function syncEstado() {
+  const n = queue.length;
+  if (navigator.onLine === false) return { cls: 'off', txt: 'Sin red' + (n ? ' · ' + n : ''), largo: 'Sin red: se trabaja con la copia del dispositivo' };
+  if (SY.flushing) return { cls: 'saving', txt: 'Enviando ' + SY.inflight, largo: 'Subiendo cambios al Sheet' };
+  if (n) return { cls: 'pending', txt: n + ' pendiente' + (n > 1 ? 's' : ''), largo: 'Hay cambios sin subir (se reintenta solo)' };
+  if (SY.pulling) return { cls: 'saving', txt: 'Actualizando…', largo: 'Leyendo los datos del Sheet' };
+  if (SY.lastError) return { cls: 'pending', txt: 'Sin servidor', largo: 'No se pudo conectar con el servidor (' + SY.lastError + ')' };
+  if (syncErrors.length) return { cls: 'pending', txt: 'Revisar', largo: 'Sincronizado, con cambios rechazados para revisar' };
+  return { cls: 'ok', txt: lastSync ? '✓ ' + hhmm(lastSync) : '✓', largo: 'Todo sincronizado' };
+}
+function updSync() {
+  const el = $('#sync'); if (!el) return;
+  const e = syncEstado();
+  el.className = 'sync ' + e.cls;
+  $('#syncTxt').textContent = e.txt;
+  el.title = e.largo + ' — tocá para ver el detalle';
+  if (S.panelSync) { const p = $('#panelSyncBody'); if (p) p.innerHTML = panelSyncBody(); }
+}
+function panelSyncBody() {
+  const e = syncEstado();
+  let h = '<div class="card" style="margin-bottom:12px">' +
+    '<div class="kv"><span>Estado</span><b><span class="dotg2 ' + e.cls + '"></span>' + esc(e.largo) + '</b></div>' +
+    '<div class="kv"><span>Pendientes</span><b>' + queue.length + '</b></div>' +
+    '<div class="kv"><span>Última sincronización</span><b>' + (lastSync ? fechaHora(lastSync) : '—') + '</b></div>' +
+    '<div class="kv"><span>Conexión</span><b>' + (navigator.onLine === false ? 'sin red' : 'con red') + '</b></div>' +
+    (SY.lastError ? '<div class="kv"><span>Último error</span><b class="pct-lo">' + esc(SY.lastError) + '</b></div>' : '') + '</div>';
+  if (queue.length) {
+    h += '<div class="small muted" style="font-weight:700;margin:0 2px 6px">PENDIENTES DE SUBIR</div><div class="card" style="margin-bottom:12px">' +
+      queue.slice(0, 50).map((o, i) => '<div class="kv"><span>' + esc(o.desc || o.tipo) + '</span><b class="small muted">' + hhmm(o.mod) + '</b></div>').join('') +
+      (queue.length > 50 ? '<div class="kv"><span>… y ' + (queue.length - 50) + ' más</span></div>' : '') + '</div>';
+  }
+  if (syncErrors.length) {
+    h += '<div class="row" style="justify-content:space-between;margin:0 2px 6px"><span class="small muted" style="font-weight:700">RECHAZADOS POR EL SERVIDOR</span><button class="btn sm" data-act="syncClear">Descartar</button></div>' +
+      '<div class="card" style="margin-bottom:12px">' + syncErrors.map(x => '<div class="kv col"><span>' + esc(x.desc) + ' · ' + fechaHora(x.t) + '</span><b class="pct-lo small">' + esc(x.error) + '</b></div>').join('') + '</div>';
+  }
+  return h;
+}
+function abrirPanelSync() {
+  openModal('<h2>Sincronización</h2><div id="panelSyncBody">' + panelSyncBody() + '</div>' +
+    '<p class="small muted">Los cambios se guardan primero en este dispositivo y se suben solos. Si no hay red, se suben cuando vuelve.</p>' +
+    '<div class="acts"><button class="btn" data-act="closeModal">Cerrar</button><button class="btn primary" data-act="syncNow">' + ic('sync') + 'Sincronizar ahora</button></div>');
+  S.panelSync = true;
+}
+async function syncNow(btn) {
+  setBusy(btn, true);
+  SY.fallas = 0; clearTimeout(SY.timer);
+  await flush();
+  await pull(true);
+  setBusy(btn, false);
+}
+
+function revocar() {
+  ['session', 'data', 'queue', 'syncErrors', 'lastSync'].forEach(k => store.del(LSP + k));
+  queue = []; syncErrors = []; lastSync = null; S.data = vacio();
+  closeModal();
+  showLogin('La sesión de este dispositivo fue cerrada desde el Sheet. Ingresá de nuevo.');
+}
+
+window.addEventListener('online', () => { SY.fallas = 0; updSync(); flush(); pull(); });
+window.addEventListener('offline', updSync);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && getSession() && appVisible()) { flush(); pull(); } });
+setInterval(() => { if (queue.length && !SY.flushing && getSession()) flush(); updSync(); }, 30000);
+setInterval(() => { if (!document.hidden && getSession() && appVisible() && !queue.length) pull(); }, 120000);
 
 /* =====================================================================
-   Login (pwa_pin + token de Tilde)
+   Login (pwa_pin + token de Tilde). Sesión SIN vencimiento, revocable desde el Sheet.
    ===================================================================== */
 const MOTIVOS = {
   no_encontrado: 'Ese mail no está habilitado.',
@@ -455,18 +610,24 @@ const MOTIVOS = {
   bloqueado_ahora: 'Demasiados intentos: el usuario quedó bloqueado.',
   error_envio_mail: 'No se pudo enviar el mail. Probá en un rato.',
   pin_vencido: 'El código venció. Pedí uno nuevo.',
-  sin_pin_generado: 'Primero pedí un código.',
-  sin_token: 'Sesión inválida. Ingresá de nuevo.', token_invalido: 'Sesión inválida. Ingresá de nuevo.', sesion_vencida: 'Tu sesión venció. Ingresá de nuevo.'
+  sin_pin_generado: 'Primero pedí un código.'
 };
 function motivoTxt(r) {
   if (r.motivo === 'cooldown') return 'Esperá ' + r.restanteSegundos + ' s para pedir otro código.';
   if (r.motivo === 'pin_incorrecto') return 'Código incorrecto. Te quedan ' + r.restantes + ' intento(s).';
   return MOTIVOS[r.motivo] || r.error || 'No se pudo completar.';
 }
+function dispositivoTxt() {
+  const ua = navigator.userAgent || '';
+  const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : 'Otro';
+  const br = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Navegador';
+  return os + ' · ' + br;
+}
 function showScreen(html) {
   $('#app').classList.add('hidden');
   const s = $('#screen'); s.classList.remove('hidden'); s.innerHTML = html;
 }
+const appVisible = () => !$('#app').classList.contains('hidden');
 function logoBlock() { return '<div class="logo">' + ICONS.logo + '<div class="n">' + esc(CONFIG.APP_NAME) + '</div><div class="muted small">Registro de evaluaciones</div></div>'; }
 
 function showLogin(msg, email) {
@@ -479,10 +640,10 @@ function showLogin(msg, email) {
     const em = $('#lEmail').value.trim().toLowerCase(), b = $('#bEmail');
     setBusy(b, true); $('#lErr').textContent = '';
     try {
-      const r = await apiRaw('solicitarPIN', { email: em });
-      if (r.ok || r.motivo === 'cooldown') { store.set('lastEmail', em); showPin(em, r.ok ? '' : motivoTxt(r)); }
-      else $('#lErr').textContent = motivoTxt(r);
-    } catch (err) { $('#lErr').textContent = 'Sin conexión. Revisá internet y probá de nuevo.'; }
+      const r = await http('GET', { action: 'solicitarPIN', email: em });
+      if (r.ok || r.motivo === 'cooldown') { store.set('lastEmail', em); showPin(em, r.ok ? '' : motivoTxt(r)); return; }
+      $('#lErr').textContent = motivoTxt(r);
+    } catch (err) { $('#lErr').textContent = 'No se pudo conectar (' + err.message + '). Probá de nuevo.'; }
     setBusy(b, false);
   });
 }
@@ -495,55 +656,65 @@ function showPin(email, msg) {
   $('#lPin').focus();
   $('#bOtro').onclick = () => showLogin('', email);
   $('#bReenv').onclick = async () => {
-    try { const r = await apiRaw('solicitarPIN', { email }); $('#lErr').textContent = r.ok ? 'Código reenviado.' : motivoTxt(r); }
-    catch (e) { $('#lErr').textContent = 'Sin conexión.'; }
+    try { const r = await http('GET', { action: 'solicitarPIN', email }); $('#lErr').textContent = r.ok ? 'Código reenviado.' : motivoTxt(r); }
+    catch (e) { $('#lErr').textContent = 'No se pudo conectar. Probá de nuevo.'; }
   };
   $('#fPin').addEventListener('submit', async e => {
     e.preventDefault();
     const b = $('#bPin'); setBusy(b, true); $('#lErr').textContent = '';
     try {
-      const r = await apiRaw('validarPIN', { email, pin: $('#lPin').value.trim() });
-      if (r.ok) { store.set('session', { email, token: r.token, expira: r.expira }); await enterApp(); return; }
+      const r = await http('POST', { action: 'validarPIN', email, pin: $('#lPin').value.trim(), dispositivo: dispositivoTxt() });
+      if (r.ok) {
+        if (store.get(LSP + 'owner', '') !== email) {           // otra cuenta en este dispositivo → copia local limpia
+          ['data', 'queue', 'syncErrors', 'lastSync'].forEach(k => store.del(LSP + k));
+          queue = []; syncErrors = []; lastSync = null; S.data = vacio();
+        }
+        store.set(LSP + 'owner', email);
+        store.set(LSP + 'session', { email, token: r.token });
+        await boot();
+        return;
+      }
       if (r.motivo === 'bloqueado_ahora') { showLogin(motivoTxt(r), email); return; }
       $('#lErr').textContent = motivoTxt(r);
-    } catch (err) { $('#lErr').textContent = err.message === 'sesion' ? '' : 'Sin conexión. Probá de nuevo.'; }
+    } catch (err) { $('#lErr').textContent = 'No se pudo conectar (' + err.message + '). Probá de nuevo.'; }
     setBusy(b, false);
   });
 }
 function showSplash(txt) { showScreen('<div class="center"><div class="spinner"></div><div class="muted">' + esc(txt) + '</div></div>'); }
 function showOffline() {
-  showScreen('<div class="card login center">' + logoBlock() + '<p>Sin conexión con el servidor.</p><p class="muted small">Tu sesión sigue guardada. Revisá internet y reintentá.</p><button class="btn primary block big" id="bRetry">Reintentar</button></div>');
+  showScreen('<div class="card login center">' + logoBlock() + '<p>No se pudo conectar con el servidor y este dispositivo todavía no tiene datos guardados.</p>' +
+    '<p class="muted small">Tu sesión sigue guardada. Revisá internet y reintentá.</p><button class="btn primary block big" id="bRetry">Reintentar</button></div>');
   $('#bRetry').onclick = boot;
 }
-function logout(msg) {
-  store.del('session'); closeModal();
-  showLogin(msg || '');
+function logout() {
+  ['session', 'data', 'queue', 'syncErrors', 'lastSync'].forEach(k => store.del(LSP + k));
+  queue = []; syncErrors = []; lastSync = null; S.data = vacio();
+  closeModal();
+  showLogin('Sesión cerrada. Los datos de este dispositivo se borraron (en el Sheet siguen todos).');
 }
-
-async function enterApp() {
-  showSplash('Cargando datos…');
-  try { await loadData(); }
-  catch (e) { if (e.message === 'sesion') return; if (e.network) { showOffline(); return; } showLogin(e.message); return; }
+function mostrarApp() {
   $('#screen').classList.add('hidden');
   $('#app').classList.remove('hidden');
-  render();
-  if (queue.length) flushQueue(); else setSync('ok');
+  render(); updSync();
 }
 
 async function boot() {
   applyTheme();
   const ses = getSession();
-  if (!ses || !ses.token || (ses.expira && new Date(ses.expira) < new Date())) { store.del('session'); showLogin(); return; }
-  showSplash('Validando usuario…');
-  let r;
-  try { r = await apiRaw('validarSesion', { email: ses.email, token: ses.token }); }
-  catch (e) { showOffline(); return; }
-  if (!r.ok) { store.del('session'); showLogin(motivoTxt(r), ses.email); return; }
-  await enterApp();
+  if (!ses || !ses.token) { showLogin(); return; }
+  if (store.get(LSP + 'data', null)) {          // hay copia local → abre al instante y sincroniza detrás
+    mostrarApp();
+    flush(); pull();
+    return;
+  }
+  showSplash('Cargando datos…');                // primer ingreso en este dispositivo
+  const ok = await pull();
+  if (!getSession()) return;                     // la sesión fue revocada durante la lectura
+  if (ok) { mostrarApp(); flush(); } else showOffline();
 }
 
 /* =====================================================================
-   Navegación
+   Navegación (menú lateral colapsable en desktop)
    ===================================================================== */
 const VIEWS = [
   { id: 'cargar', label: 'Cargar', ic: 'cargar' },
@@ -553,13 +724,27 @@ const VIEWS = [
   { id: 'reportes', label: 'Reportes', ic: 'reportes' }
 ];
 function renderNav() {
-  $('#nav').innerHTML = VIEWS.map(v => '<button data-act="nav" data-v="' + v.id + '" class="' + (S.view === v.id ? 'on' : '') + '">' + ic(v.ic) + '<span>' + v.label + '</span></button>').join('');
+  const col = document.body.classList.contains('nav-col');
+  $('#nav').innerHTML = VIEWS.map(v => '<button data-act="nav" data-v="' + v.id + '" title="' + v.label + '" class="' + (S.view === v.id ? 'on' : '') + '">' + ic(v.ic) + '<span>' + v.label + '</span></button>').join('') +
+    '<button class="nav-toggle" data-act="navToggle" title="' + (col ? 'Expandir menú' : 'Colapsar menú') + '">' + ic(col ? 'colR' : 'colL') + '<span>Colapsar</span></button>';
+}
+function toggleNav() {
+  const c = !document.body.classList.contains('nav-col');
+  document.body.classList.toggle('nav-col', c);
+  store.set('navCol', c);
+  renderNav();
 }
 function go(view) { S.view = view; render(); window.scrollTo(0, 0); }
 function render() {
   renderNav();
   const fn = { cargar: viewCargar, examenes: viewExamenes, alumnos: viewAlumnos, actividades: viewActividades, reportes: viewReportes }[S.view];
   $('#main').innerHTML = fn();
+}
+// re-render tras una sincronización en segundo plano, sin interrumpir si se está escribiendo
+function renderSafe() {
+  const a = document.activeElement;
+  if (a && a.closest && a.closest('#main') && /INPUT|SELECT|TEXTAREA/.test(a.tagName)) return;
+  render();
 }
 
 /* =====================================================================
@@ -606,7 +791,7 @@ function wz2() {
       const c = conteo(evalDe(ex.id, a.id).notas, ex.codigos);
       extra = '<div class="mini"><span class="chip c">' + c.C + '</span><span class="chip i">' + c.I + '</span><span class="chip n">' + c.N + '</span></div>';
     }
-    return '<button class="item" data-act="wzAlumno" data-id="' + a.id + '"><div class="grow"><div class="t">' + esc(a.apellido) + ', ' + esc(a.nombre) + '</div><div class="s">' + a.id + '</div></div>' + extra + ic('chev').replace('<svg', '<svg class="chev"') + '</button>';
+    return '<button class="item" data-act="wzAlumno" data-id="' + a.id + '"><div class="grow"><div class="t">' + esc(a.apellido) + ', ' + esc(a.nombre) + '</div></div>' + extra + ic('chev').replace('<svg', '<svg class="chev"') + '</button>';
   }).join('') + '</div>';
   return h;
 }
@@ -680,7 +865,7 @@ function viewExamenes() {
   h += '<div class="list">' + exs.map(e => {
     const n = evalsDeExamen(e.id).length;
     return '<div class="item"><div class="grow"><div class="t">' + esc(e.nombre) + (e.activo ? '' : ' <span class="chip off">inactivo</span>') + '</div>' +
-      '<div class="s">' + e.id + ' · ' + fmtFecha(e.fecha) + ' · ' + e.codigos.length + ' actividades · ' + n + ' evaluados' + (n ? ' · 🔒 actividades bloqueadas' : '') + '</div></div>' +
+      '<div class="s">' + fmtFecha(e.fecha) + ' · ' + e.codigos.length + ' actividades · ' + n + ' evaluados' + (n ? ' · 🔒 actividades bloqueadas' : '') + '</div></div>' +
       '<div class="row wrapr" style="justify-content:flex-end"><button class="btn sm" data-act="editExamen" data-id="' + e.id + '">' + ic('edit') + 'Editar</button>' +
       '<button class="btn sm" data-act="dupExamen" data-id="' + e.id + '">' + ic('copy') + 'Duplicar</button>' +
       '<button class="btn sm ' + (e.activo ? 'danger' : '') + '" data-act="toggleExamen" data-id="' + e.id + '">' + (e.activo ? 'Dar de baja' : 'Reactivar') + '</button></div></div>';
@@ -734,18 +919,19 @@ function renderFormExamen() {
   document.querySelector('.modal').scrollTop = scr;
   if (foc === 'q') { const el = document.querySelector('[data-fi="q"]'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
 }
-async function saveExamen(btn) {
+function saveExamen() {
   const f = S.form;
   if (!f.nombre.trim()) { f.err = 'Poné un nombre.'; renderFormExamen(); return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(f.fecha)) { f.err = 'Fecha inválida.'; renderFormExamen(); return; }
   if (!f.codigos.length) { f.err = 'Agregá al menos una actividad.'; renderFormExamen(); return; }
-  setBusy(btn, true);
-  try {
-    const r = await api('guardarExamen', { id: f.id, nombre: f.nombre, fecha: f.fecha, codigos: f.codigos });
-    if (!r.ok) { f.err = r.error; renderFormExamen(); return; }
-    const i = S.data.examenes.findIndex(e => e.id === r.examen.id);
-    if (i >= 0) S.data.examenes[i] = r.examen; else S.data.examenes.push(r.examen);
-    closeModal(); toast('Examen guardado'); render();
-  } catch (e) { if (e.message !== 'sesion') toast('Sin conexión: no se guardó.', 'error'); setBusy(btn, false); }
+  if (f.id && evalsDeExamen(f.id).length && examen(f.id).codigos.join('|') !== f.codigos.join('|')) {
+    f.err = 'Las actividades están bloqueadas: ya hay alumnos evaluados.'; renderFormExamen(); return;
+  }
+  const data = { id: f.id || uid('E'), nombre: f.nombre.trim(), fecha: f.fecha, codigos: f.codigos.slice() };
+  const desc = (f.id ? 'Edición' : 'Alta') + ' examen: ' + data.nombre;
+  closeModal();
+  encolar('examen', 'upsert', data, desc);
+  toast('Examen guardado');
 }
 
 /* =====================================================================
@@ -754,12 +940,12 @@ async function saveExamen(btn) {
 function viewAlumnos() {
   const q = S.alq.trim().toLowerCase();
   const als = S.data.alumnos.filter(a => (S.verInactivos || a.activo) && (!q || (a.apellido + ' ' + a.nombre + ' ' + a.id).toLowerCase().includes(q))).sort(byApellido);
-  let h = '<div class="wrap wide"><h1 class="title">Alumnos</h1><p class="subtitle">' + S.data.alumnos.filter(a => a.activo).length + ' activos. Para carga masiva usá el menú del Sheet: <b>' + esc(CONFIG.APP_NAME) + ' Admin › Importar alumnos</b>.</p>';
+  let h = '<div class="wrap wide"><h1 class="title">Alumnos</h1><p class="subtitle">' + S.data.alumnos.filter(a => a.activo).length + ' activos. Para carga masiva usá el menú del Sheet: <b>' + esc(CONFIG.APP_NAME) + ' Admin › Importar alumnos</b> (aparecen con la próxima sincronización).</p>';
   h += toolbarHtml('alq', S.alq, 'Buscar alumno…', 'nuevoAlumno', 'Nuevo alumno');
   if (!als.length) return h + '<div class="card empty">No hay alumnos.</div></div>';
   h += '<div class="list">' + als.map(a => {
     const n = S.data.evaluaciones.filter(v => v.alumnoId === a.id).length;
-    return '<div class="item"><div class="grow"><div class="t">' + esc(a.apellido) + ', ' + esc(a.nombre) + (a.activo ? '' : ' <span class="chip off">inactivo</span>') + '</div><div class="s">' + a.id + ' · ' + n + ' exámenes rendidos</div></div>' +
+    return '<div class="item"><div class="grow"><div class="t">' + esc(a.apellido) + ', ' + esc(a.nombre) + (a.activo ? '' : ' <span class="chip off">inactivo</span>') + '</div><div class="s">' + n + ' exámenes rendidos</div></div>' +
       '<div class="row wrapr" style="justify-content:flex-end"><button class="btn sm" data-act="editAlumno" data-id="' + a.id + '">' + ic('edit') + 'Editar</button>' +
       '<button class="btn sm ' + (a.activo ? 'danger' : '') + '" data-act="toggleAlumno" data-id="' + a.id + '">' + (a.activo ? 'Dar de baja' : 'Reactivar') + '</button></div></div>';
   }).join('') + '</div></div>';
@@ -767,22 +953,21 @@ function viewAlumnos() {
 }
 function abrirFormAlumno(id) {
   const a = id ? alumno(id) : null;
-  openModal('<h2>' + (a ? 'Editar alumno · ' + a.id : 'Nuevo alumno') + '</h2>' +
+  openModal('<h2>' + (a ? 'Editar alumno' : 'Nuevo alumno') + '</h2>' +
     '<form id="fAl"><div class="field"><label>Nombre</label><input class="input" id="alN" required value="' + esc(a ? a.nombre : '') + '"></div>' +
     '<div class="field"><label>Apellido</label><input class="input" id="alA" required value="' + esc(a ? a.apellido : '') + '"></div>' +
-    (a ? '' : '<p class="small muted">El ID se genera solo.</p>') +
     '<div class="err" id="alErr"></div><div class="acts"><button type="button" class="btn" data-act="closeModal">Cancelar</button><button class="btn primary" id="alSave">Guardar</button></div></form>');
   $('#alN').focus();
-  $('#fAl').addEventListener('submit', async e => {
+  $('#fAl').addEventListener('submit', e => {
     e.preventDefault();
-    const b = $('#alSave'); setBusy(b, true);
-    try {
-      const r = await api('guardarAlumno', { id: a ? a.id : '', nombre: $('#alN').value, apellido: $('#alA').value });
-      if (!r.ok) { $('#alErr').textContent = r.error; setBusy(b, false); return; }
-      const i = S.data.alumnos.findIndex(x => x.id === r.alumno.id);
-      if (i >= 0) S.data.alumnos[i] = r.alumno; else S.data.alumnos.push(r.alumno);
-      closeModal(); toast('Alumno guardado: ' + r.alumno.id); render();
-    } catch (err) { if (err.message !== 'sesion') { $('#alErr').textContent = 'Sin conexión: no se guardó.'; setBusy(b, false); } }
+    const nombre = $('#alN').value.trim(), apellido = $('#alA').value.trim();
+    if (!nombre || !apellido) { $('#alErr').textContent = 'Nombre y apellido son obligatorios.'; return; }
+    const dup = S.data.alumnos.find(x => x !== a && x.nombre.toLowerCase() === nombre.toLowerCase() && x.apellido.toLowerCase() === apellido.toLowerCase());
+    if (dup && !confirm('Ya existe un alumno llamado ' + apellido + ', ' + nombre + '. ¿Guardarlo igual?')) return;
+    const data = { id: a ? a.id : uid('A'), nombre, apellido };
+    closeModal();
+    encolar('alumno', 'upsert', data, (a ? 'Edición' : 'Alta') + ' alumno: ' + apellido + ', ' + nombre);
+    toast('Alumno guardado: ' + apellido + ', ' + nombre);
   });
 }
 
@@ -816,33 +1001,27 @@ function abrirFormActividad(cod) {
     (a ? '<p class="small muted">El código no se cambia: está atado a las evaluaciones.</p>' : '') +
     '<div class="err" id="acErr"></div><div class="acts"><button type="button" class="btn" data-act="closeModal">Cancelar</button><button class="btn primary" id="acSave">Guardar</button></div></form>');
   (a ? $('#acD') : $('#acC')).focus();
-  $('#fAc').addEventListener('submit', async e => {
+  $('#fAc').addEventListener('submit', e => {
     e.preventDefault();
-    const b = $('#acSave'); setBusy(b, true);
-    try {
-      const r = await api('guardarActividad', { nuevo: !a, codigo: a ? a.codigo : $('#acC').value, descripcion: $('#acD').value, etiquetas: $('#acE').value });
-      if (!r.ok) { $('#acErr').textContent = r.error; setBusy(b, false); return; }
-      const i = S.data.actividades.findIndex(x => x.codigo === r.actividad.codigo);
-      if (i >= 0) S.data.actividades[i] = r.actividad; else S.data.actividades.push(r.actividad);
-      closeModal(); toast('Actividad guardada: ' + r.actividad.codigo); render();
-    } catch (err) { if (err.message !== 'sesion') { $('#acErr').textContent = 'Sin conexión: no se guardó.'; setBusy(b, false); } }
+    const codigo = (a ? a.codigo : $('#acC').value).trim().toUpperCase();
+    const descripcion = $('#acD').value.trim();
+    const etiquetas = normTags($('#acE').value);
+    if (!/^[A-Z0-9][A-Z0-9_.\-]{0,19}$/.test(codigo)) { $('#acErr').textContent = 'Código inválido: letras, números, guion, guion bajo o punto (máx. 20).'; return; }
+    if (!descripcion) { $('#acErr').textContent = 'La descripción es obligatoria.'; return; }
+    if (!a && actividad(codigo)) { $('#acErr').textContent = 'Ya existe una actividad con el código ' + codigo + '.'; return; }
+    closeModal();
+    encolar('actividad', 'upsert', { codigo, descripcion, etiquetas }, (a ? 'Edición' : 'Alta') + ' actividad: ' + codigo);
+    toast('Actividad guardada: ' + codigo);
   });
 }
 
-async function toggleEstado(tipo, key, btn) {
-  const map = {
-    alumno: { act: 'estadoAlumno', obj: alumno(key), data: o => ({ id: o.id, activo: !o.activo }) },
-    actividad: { act: 'estadoActividad', obj: actividad(key), data: o => ({ codigo: o.codigo, activo: !o.activo }) },
-    examen: { act: 'estadoExamen', obj: examen(key), data: o => ({ id: o.id, activo: !o.activo }) }
-  }[tipo];
-  const o = map.obj;
+function toggleEstado(tipo, key) {
+  const o = tipo === 'alumno' ? alumno(key) : tipo === 'actividad' ? actividad(key) : examen(key);
+  if (!o) return;
   if (o.activo && !confirm('¿Dar de baja? No se borra nada: deja de aparecer para cargar y se puede reactivar.')) return;
-  setBusy(btn, true);
-  try {
-    const r = await api(map.act, map.data(o));
-    if (!r.ok) { toast(r.error, 'error'); setBusy(btn, false); return; }
-    o.activo = !o.activo; render();
-  } catch (e) { if (e.message !== 'sesion') { toast('Sin conexión: no se guardó.', 'error'); setBusy(btn, false); } }
+  const data = tipo === 'actividad' ? { codigo: o.codigo, activo: !o.activo } : { id: o.id, activo: !o.activo };
+  const nombre = tipo === 'alumno' ? o.apellido + ', ' + o.nombre : tipo === 'actividad' ? o.codigo : o.nombre;
+  encolar(tipo, 'estado', data, (o.activo ? 'Baja ' : 'Reactivación ') + tipo + ': ' + nombre);
 }
 
 /* =====================================================================
@@ -944,6 +1123,9 @@ document.addEventListener('click', e => {
     case 'wzRevisar': wzRevisar(); break;
     case 'wzConfirmar': wzConfirmar(); break;
     case 'closeModal': closeModal(); break;
+    case 'navToggle': toggleNav(); break;
+    case 'syncNow': syncNow(b); break;
+    case 'syncClear': syncErrors = []; persist(); updSync(); break;
     case 'verInactivos': S.verInactivos = b.checked; render(); break;
     case 'nuevoExamen': abrirFormExamen(null); break;
     case 'editExamen': abrirFormExamen(b.dataset.id); break;
@@ -1002,88 +1184,116 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 }
 
 /* =====================================================================
-   MODO DEMO — backend simulado con los mismos datos de prueba que el GAS
+   MODO DEMO (?demo=1) — backend simulado con la misma lógica que el GAS v1.1.0.
+   Guarda su "Sheet" en el navegador (tilde_demo_server). Para pruebas:
+   ?fail=0.3 → 30 % de llamadas fallan como el 404 de Apps Script;
+   window.__failNext = N → las próximas N llamadas fallan.
    ===================================================================== */
 const MOCK = (() => {
-  const DEMO_DATA = {
+  const KEY = CONFIG.LS + 'demo_server';
+  const FAIL_P = Number(new URLSearchParams(location.search).get('fail')) || 0;
+  const SEED = {
     alumnos: [['Sofía', 'Álvarez'], ['Mateo', 'Benítez'], ['Valentina', 'Castro'], ['Benjamín', 'Díaz'], ['Emma', 'Fernández'], ['Joaquín', 'Gómez'], ['Martina', 'López'], ['Thiago', 'Martínez'], ['Catalina', 'Pérez'], ['Lautaro', 'Romero']],
     actividades: [['SUM01', 'Suma de dos cifras sin dificultad', 'cálculo, suma'], ['SUM02', 'Suma con dificultad (llevando)', 'cálculo, suma'], ['RES01', 'Resta de dos cifras sin dificultad', 'cálculo, resta'], ['RES02', 'Resta con dificultad (pidiendo)', 'cálculo, resta'], ['PRB01', 'Problema de una operación', 'problemas, comprensión'], ['PRB02', 'Problema de dos operaciones', 'problemas, comprensión'], ['NUM01', 'Escritura de números hasta 1000', 'numeración'], ['NUM02', 'Anterior y posterior', 'numeración'], ['GEO01', 'Reconocer figuras geométricas', 'geometría'], ['MED01', 'Lectura de la hora', 'medida'], ['LEC01', 'Comprensión de texto breve', 'lectura, comprensión'], ['LEC02', 'Idea principal del texto', 'lectura, comprensión'], ['ESC01', 'Ortografía: uso de mayúsculas', 'escritura, ortografía'], ['ESC02', 'Producción de oración completa', 'escritura']],
     examenes: [['Matemática 1 – 3°A – 2026 – Esc. N°5', '2026-09-15', ['NUM01', 'NUM02', 'SUM01', 'SUM02', 'RES01', 'RES02', 'PRB01', 'PRB02', 'GEO01', 'MED01']], ['Lengua 1 – 3°A – 2026 – Esc. N°5', '2026-09-22', ['LEC01', 'LEC02', 'ESC01', 'ESC02', 'PRB01', 'NUM01', 'SUM01', 'RES01', 'GEO01', 'MED01', 'NUM02']]],
     evaluaciones: ['CCCCCICICC', 'CCCICIIICC', 'CCCCCCCCCC', 'CCNICINNCI', 'CCCCCICCCC', 'CICIIIIICN']
   };
-  const pad = (n, d) => String(n).padStart(d, '0');
-  const db = {
-    alumnos: DEMO_DATA.alumnos.map((a, i) => ({ id: 'A' + pad(i + 1, 4), nombre: a[0], apellido: a[1], activo: true })),
-    actividades: DEMO_DATA.actividades.map(a => ({ codigo: a[0], descripcion: a[1], etiquetas: a[2].split(',').map(x => x.trim()), activo: true })),
-    examenes: DEMO_DATA.examenes.map((e, i) => ({ id: 'E' + pad(i + 1, 4), nombre: e[0], fecha: e[1], activo: true, codigos: e[2] })),
-    evaluaciones: []
-  };
-  DEMO_DATA.evaluaciones.forEach((s, i) => {
-    const notas = {}; db.examenes[0].codigos.forEach((c, j) => notas[c] = s[j]);
-    db.evaluaciones.push({ id: 'V' + pad(i + 1, 5), examenId: 'E0001', alumnoId: 'A' + pad(i + 1, 4), fechaCarga: new Date().toISOString(), fechaEdicion: '', notas });
-  });
-  const nextId = (arr, p, d) => p + pad(arr.reduce((m, x) => Math.max(m, +(x.id.match(/\d+$/) || [0])[0]), 0) + 1, d);
+  const p4 = (n, d) => String(n).padStart(d, '0');
+  function seed() {
+    const db = {
+      alumnos: SEED.alumnos.map((a, i) => ({ id: 'A' + p4(i + 1, 4), nombre: a[0], apellido: a[1], activo: true })),
+      actividades: SEED.actividades.map(a => ({ codigo: a[0], descripcion: a[1], etiquetas: normTags(a[2]), activo: true })),
+      examenes: SEED.examenes.map((e, i) => ({ id: 'E' + p4(i + 1, 4), nombre: e[0], fecha: e[1], activo: true, codigos: e[2] })),
+      evaluaciones: [], mods: {}, sesiones: []
+    };
+    SEED.evaluaciones.forEach((s, i) => {
+      const notas = {}; db.examenes[0].codigos.forEach((c, j) => notas[c] = s[j]);
+      db.evaluaciones.push({ id: 'V' + p4(i + 1, 5), examenId: 'E0001', alumnoId: 'A' + p4(i + 1, 4), fechaCarga: new Date().toISOString(), fechaEdicion: '', notas });
+    });
+    return db;
+  }
+  function load() { try { const x = JSON.parse(localStorage.getItem(KEY)); if (x && x.alumnos) return x; } catch (e) {} return seed(); }
+  function save(db) { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} }
   const clone = o => JSON.parse(JSON.stringify(o));
-  const tags = e => [...new Set(String(e || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean))];
-  const H = {
-    solicitarPIN: p => /.+@.+/.test(p.email || '') ? { ok: true } : { ok: false, motivo: 'no_encontrado' },
-    validarPIN: p => p.pin === '123456' ? { ok: true, token: 'demo-token', expira: new Date(Date.now() + 7 * 864e5).toISOString() } : { ok: false, motivo: 'pin_incorrecto', restantes: 2 },
-    validarSesion: p => p.token === 'demo-token' ? { ok: true } : { ok: false, motivo: 'token_invalido' },
-    getData: () => Object.assign({ ok: true }, clone(db)),
-    guardarAlumno: d => {
-      if (!String(d.nombre || '').trim() || !String(d.apellido || '').trim()) return { ok: false, error: 'Nombre y apellido son obligatorios.' };
-      let a = d.id && db.alumnos.find(x => x.id === d.id);
-      if (a) { a.nombre = d.nombre.trim(); a.apellido = d.apellido.trim(); }
-      else { a = { id: nextId(db.alumnos, 'A', 4), nombre: d.nombre.trim(), apellido: d.apellido.trim(), activo: true }; db.alumnos.push(a); }
-      return { ok: true, alumno: clone(a) };
-    },
-    guardarActividad: d => {
-      const c = String(d.codigo || '').trim().toUpperCase();
-      if (!/^[A-Z0-9][A-Z0-9_.\-]{0,19}$/.test(c)) return { ok: false, error: 'Código inválido: usá letras, números, guion o punto (máx. 20).' };
+  const sesOk = (db, p) => db.sesiones.some(s => s.token === p.token && s.email === p.email);
+
+  function aplicar(db, o) {
+    const d = o.data || {}, mod = o.mod || new Date().toISOString();
+    const key = o.tipo + ':' + (o.tipo === 'evaluacion' ? d.examenId + '/' + d.alumnoId : (d.id || d.codigo));
+    const viejo = db.mods[key] && mod < db.mods[key];
+    if (o.op === 'estado') {
+      const arr = { alumno: db.alumnos, actividad: db.actividades, examen: db.examenes }[o.tipo];
+      const x = arr && arr.find(y => (y.id || y.codigo) === (d.id || d.codigo));
+      if (!x) return { ok: false, error: 'No existe ' + (d.id || d.codigo) };
+      if (viejo) return { ok: true, ignorado: true };
+      x.activo = d.activo === true; db.mods[key] = mod; return { ok: true };
+    }
+    if (o.op !== 'upsert') return { ok: false, error: 'Operación desconocida' };
+    if (viejo) return { ok: true, ignorado: true };
+    if (o.tipo === 'alumno') {
+      if (!d.id || !String(d.nombre || '').trim() || !String(d.apellido || '').trim()) return { ok: false, error: 'Nombre y apellido son obligatorios.' };
+      const a = db.alumnos.find(x => x.id === d.id);
+      if (a) { a.nombre = d.nombre; a.apellido = d.apellido; } else db.alumnos.push({ id: d.id, nombre: d.nombre, apellido: d.apellido, activo: true });
+    } else if (o.tipo === 'actividad') {
+      const c = String(d.codigo || '').toUpperCase();
+      if (!/^[A-Z0-9][A-Z0-9_.\-]{0,19}$/.test(c)) return { ok: false, error: 'Código inválido: ' + c };
       if (!String(d.descripcion || '').trim()) return { ok: false, error: 'La descripción es obligatoria.' };
-      let a = db.actividades.find(x => x.codigo === c);
-      if (d.nuevo) { if (a) return { ok: false, error: 'Ya existe una actividad con el código ' + c }; a = { codigo: c, activo: true }; db.actividades.push(a); }
-      else if (!a) return { ok: false, error: 'No existe la actividad ' + c };
-      a.descripcion = d.descripcion.trim(); a.etiquetas = tags(d.etiquetas);
-      return { ok: true, actividad: clone(a) };
-    },
-    guardarExamen: d => {
-      if (!String(d.nombre || '').trim()) return { ok: false, error: 'El nombre del examen es obligatorio.' };
+      const a = db.actividades.find(x => x.codigo === c);
+      if (a) { a.descripcion = d.descripcion; a.etiquetas = normTags((d.etiquetas || []).join(',')); }
+      else db.actividades.push({ codigo: c, descripcion: d.descripcion, etiquetas: normTags((d.etiquetas || []).join(',')), activo: true });
+    } else if (o.tipo === 'examen') {
+      if (!d.id || !String(d.nombre || '').trim()) return { ok: false, error: 'El nombre del examen es obligatorio.' };
       if (!(d.codigos || []).length) return { ok: false, error: 'El examen necesita al menos una actividad.' };
-      let e = d.id && db.examenes.find(x => x.id === d.id);
-      if (e) {
-        if (e.codigos.join('|') !== d.codigos.join('|') && db.evaluaciones.some(v => v.examenId === e.id)) return { ok: false, error: 'Las actividades de este examen están bloqueadas: ya hay alumnos evaluados.' };
-        Object.assign(e, { nombre: d.nombre.trim(), fecha: d.fecha, codigos: d.codigos.slice() });
-      } else { e = { id: nextId(db.examenes, 'E', 4), nombre: d.nombre.trim(), fecha: d.fecha, activo: true, codigos: d.codigos.slice() }; db.examenes.push(e); }
-      return { ok: true, examen: clone(e) };
-    },
-    guardarEvaluacion: d => {
+      const falta = d.codigos.find(c => !db.actividades.some(a => a.codigo === c));
+      if (falta) return { ok: false, error: 'No existe la actividad ' + falta };
+      const e = db.examenes.find(x => x.id === d.id);
+      if (!e) db.examenes.push({ id: d.id, nombre: d.nombre, fecha: d.fecha, activo: true, codigos: d.codigos.slice() });
+      else {
+        e.nombre = d.nombre; e.fecha = d.fecha; db.mods[key] = mod;
+        if (e.codigos.join('|') !== d.codigos.join('|')) {
+          if (db.evaluaciones.some(v => v.examenId === e.id)) return { ok: false, error: 'Las actividades de "' + e.nombre + '" están bloqueadas: ya hay alumnos evaluados (nombre y fecha sí se guardaron).' };
+          e.codigos = d.codigos.slice();
+        }
+      }
+    } else if (o.tipo === 'evaluacion') {
       const e = db.examenes.find(x => x.id === d.examenId);
       if (!e) return { ok: false, error: 'No existe el examen' };
-      const falta = e.codigos.filter(c => !'CIN'.includes(d.notas[c] || 'X'));
-      if (falta.length) return { ok: false, error: 'Faltan calificar: ' + falta.join(', ') };
-      let v = db.evaluaciones.find(x => x.examenId === d.examenId && x.alumnoId === d.alumnoId);
-      if (v) { v.notas = clone(d.notas); v.fechaEdicion = new Date().toISOString(); return { ok: true, nuevo: false, evalId: v.id }; }
-      v = { id: nextId(db.evaluaciones, 'V', 5), examenId: d.examenId, alumnoId: d.alumnoId, fechaCarga: new Date().toISOString(), fechaEdicion: '', notas: clone(d.notas) };
-      db.evaluaciones.push(v); return { ok: true, nuevo: true, evalId: v.id };
-    }
-  };
-  ['Alumno', 'Actividad', 'Examen'].forEach(t => {
-    H['estado' + t] = d => {
-      const arr = { Alumno: db.alumnos, Actividad: db.actividades, Examen: db.examenes }[t];
-      const o = arr.find(x => (x.id || x.codigo) === (d.id || d.codigo));
-      if (!o) return { ok: false, error: 'No existe' };
-      o.activo = d.activo === true; return { ok: true };
-    };
-  });
+      if (!db.alumnos.some(x => x.id === d.alumnoId)) return { ok: false, error: 'No existe el alumno' };
+      const faltan = e.codigos.filter(c => !['C', 'I', 'N'].includes((d.notas || {})[c]));
+      if (faltan.length) return { ok: false, error: 'Faltan calificar: ' + faltan.join(', ') };
+      const v = db.evaluaciones.find(x => x.examenId === d.examenId && x.alumnoId === d.alumnoId);
+      if (v) { v.notas = clone(d.notas); v.fechaEdicion = new Date().toISOString(); }
+      else db.evaluaciones.push({ id: 'V-' + Math.random().toString(16).slice(2, 14), examenId: d.examenId, alumnoId: d.alumnoId, fechaCarga: new Date().toISOString(), fechaEdicion: '', notas: clone(d.notas) });
+    } else return { ok: false, error: 'Operación desconocida' };
+    db.mods[key] = mod;
+    return { ok: true };
+  }
+
   return {
-    call(action, p) {
-      return new Promise(res => setTimeout(() => {
-        const h = H[action];
-        if (!h) return res({ ok: false, error: 'Acción desconocida: ' + action });
-        if (!['solicitarPIN', 'validarPIN', 'validarSesion'].includes(action) && p.token !== 'demo-token') return res({ ok: false, motivo: 'sesion_invalida' });
-        res(h(action.startsWith('validar') || action === 'solicitarPIN' ? p : (p.data || {})));
-      }, 220));
+    async call(method, p) {
+      await new Promise(r => setTimeout(r, 180));
+      if (window.__failNext > 0) { window.__failNext--; throw netError('HTTP 404'); }
+      if (FAIL_P && Math.random() < FAIL_P) throw netError('HTTP 404');
+      const db = load();
+      let r;
+      switch (p.action) {
+        case 'solicitarPIN': r = /.+@.+/.test(p.email || '') ? { ok: true } : { ok: false, motivo: 'no_encontrado' }; break;
+        case 'validarPIN':
+          if (p.pin === '123456') { const token = 'demo-' + Math.random().toString(36).slice(2); db.sesiones.push({ email: p.email, token, dispositivo: p.dispositivo }); r = { ok: true, token }; }
+          else r = { ok: false, motivo: 'pin_incorrecto', restantes: 2 };
+          break;
+        case 'validarSesion': r = sesOk(db, p) ? { ok: true } : { ok: false, motivo: 'token_invalido' }; break;
+        case 'sync':
+          r = sesOk(db, p) ? Object.assign({ ok: true }, clone({ alumnos: db.alumnos, actividades: db.actividades, examenes: db.examenes, evaluaciones: db.evaluaciones }))
+            : { ok: false, motivo: 'sesion_invalida', detalle: 'token_invalido' };
+          break;
+        case 'batch':
+          r = sesOk(db, p) ? { ok: true, resultados: (p.ops || []).map(o => Object.assign(aplicar(db, o), { opId: o.opId })) } : { ok: false, motivo: 'sesion_invalida' };
+          break;
+        default: r = { ok: false, error: 'Acción desconocida: ' + p.action };
+      }
+      save(db);
+      return r;
     }
   };
 })();
@@ -1096,9 +1306,16 @@ const MOCK = (() => {
   $('#brandIcon').innerHTML = ICONS.logo;
   $('#brandName').textContent = CONFIG.APP_NAME;
   $('#brandVer').textContent = 'v' + CONFIG.APP_VERSION;
+  if (store.get('navCol', false)) document.body.classList.add('nav-col');
   $('#btnLogout').innerHTML = ic('logout');
-  $('#btnLogout').onclick = () => { if (!queue.length || confirm('Hay evaluaciones sin guardar todavía. ¿Cerrar sesión igual?')) logout(); };
+  $('#btnLogout').onclick = () => {
+    const msg = queue.length
+      ? 'Hay ' + queue.length + ' cambio(s) sin subir que se perderían. ¿Cerrar sesión igual?'
+      : '¿Cerrar sesión? Se borran los datos guardados en este dispositivo (en el Sheet siguen todos).';
+    if (confirm(msg)) logout();
+  };
   $('#btnTheme').onclick = toggleTheme;
+  $('#sync').onclick = abrirPanelSync;
   if (DEMO) $('#demoBar').classList.remove('hidden');
   boot();
 })();
